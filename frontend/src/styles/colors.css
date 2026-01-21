@@ -1,0 +1,27 @@
+:root {
+  --primary-green: #2E7D32;
+  --primary-green-light: #4CAF50;
+  --primary-green-dark: #1B5E20;
+  --primary-green-hover: #388E3C;
+  
+  --gray-dark: #263238;
+  --gray-medium: #546E7A;
+  --gray-light: #ECEFF1;
+  --gray-lighter: #F5F5F5;
+  
+  --accent-gold: #FFC107;
+  --accent-red: #D32F2F;
+  --accent-blue: #1976D2;
+  
+  --bg-primary: #FAFAFA;
+  --bg-card: #FFFFFF;
+  --bg-game-table: #1B5E20;
+  
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+  
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
