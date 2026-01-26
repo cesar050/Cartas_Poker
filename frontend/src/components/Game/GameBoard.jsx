@@ -25,13 +25,39 @@ const GameBoard = ({ gameState, onFlipCard, onPlaceCard, currentCard, unlockedPi
       return pile !== cardValue;
     }
 
+    // Si hay una carta actual, solo desbloquear la pila correspondiente
+    if (currentCard) {
+      const cardValue = currentCard[0];
+      return pile !== cardValue;
+    }
+
+    // Verificar si la pila tiene cartas boca abajo
+    const faceDownCount = gameState?.face_down_cards?.[pile] || 0;
+    const pileCards = Array.isArray(gameState?.piles?.[pile]) ? gameState.piles[pile] : [];
+    const isPileComplete = pileCards.length === 4 && faceDownCount === 0;
+
+    // Si la pila está completa, está bloqueada para voltear
+    if (isPileComplete) {
+      return true;
+    }
+
+    // Si no hay unlockedPile, permitir voltear de cualquier pila con cartas boca abajo
     if (!unlockedPile) {
-      const faceDownCount = gameState?.face_down_cards?.[pile] || 0;
       return faceDownCount === 0;
     }
 
+    // Si hay unlockedPile, verificar si está completa
+    const unlockedFaceDown = gameState?.face_down_cards?.[unlockedPile] || 0;
+    const unlockedPileCards = Array.isArray(gameState?.piles?.[unlockedPile]) ? gameState.piles[unlockedPile] : [];
+    const isUnlockedComplete = unlockedPileCards.length === 4 && unlockedFaceDown === 0;
+
+    // Si la pila desbloqueada está completa, permitir voltear de cualquier pila con cartas boca abajo
+    if (isUnlockedComplete) {
+      return faceDownCount === 0;
+    }
+
+    // Si la pila desbloqueada no está completa, solo permitir voltear de esa pila
     if (unlockedPile === pile) {
-      const faceDownCount = gameState?.face_down_cards?.[pile] || 0;
       return faceDownCount === 0;
     }
 

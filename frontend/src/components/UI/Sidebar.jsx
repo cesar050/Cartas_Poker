@@ -35,7 +35,8 @@ const Sidebar = ({
       autoPlayAttemptedRef.current = true;
       onAutoPlay();
     }
-  }, [gameState?.status, mode, isAutoPlaying, onAutoPlay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.status, mode, isAutoPlaying, onAutoPlay]); // gameState.piles y gameState.face_down_cards se acceden pero no necesitan estar en dependencias
   
   useEffect(() => {
     if (gameState?.status !== 'playing') {
@@ -207,6 +208,24 @@ const Sidebar = ({
             whileTap={{ scale: 0.98 }}
           >
             <><FaRocket className="icon-inline" /> Iniciar</>
+          </motion.button>
+        )}
+
+        {gameState?.status === 'playing' && mode === 'auto' && (
+          <motion.button 
+            className={`btn ${isAutoPlaying ? 'btn-stop' : 'btn-auto'}`}
+            onClick={onAutoPlay}
+            disabled={isLoading}
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isAutoPlaying ? (
+              <><FaRobot className="icon-inline" /> Detener Auto</>
+            ) : (
+              <><FaRobot className="icon-inline" /> Jugar Automático</>
+            )}
           </motion.button>
         )}
 

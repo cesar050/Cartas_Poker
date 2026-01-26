@@ -24,20 +24,18 @@ function App() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showPredictionResult, setShowPredictionResult] = useState(false);
   const [unlockedPile, setUnlockedPile] = useState(null);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flippedCard, setFlippedCard] = useState(null);
   const [shuffleData, setShuffleData] = useState(null);
   const [isDealing, setIsDealing] = useState(false);
   const [gameMode, setGameMode] = useState('manual');
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const shuffleCompletePromiseRef = useRef(null);
   const shuffleCompleteResolveRef = useRef(null);
   const gameInitializedRef = useRef(false);
-  const isAutoPlayingRef = useRef(false);
+  const autoPlayActiveRef = useRef(false);
   
   const { playShuffle, playFlip, playPlace } = useCardSounds();
-  
-  const autoPlayIntervalRef = useRef(null);
 
   const showAlert = useCallback((type, message, duration = 3000) => {
     setAlert({ type, message });
@@ -53,7 +51,7 @@ function App() {
       const gameStateData = response.data.game_state;
       
       if (!isDealing && !skipUpdate) {
-        setGameState(gameStateData);
+        setGameState(JSON.parse(JSON.stringify(gameStateData)));
       }
       
       if (gameStateData?.shuffle_count !== undefined) {
@@ -67,13 +65,6 @@ function App() {
   }, [gameId, isDealing]);
 
   const handleNewGame = useCallback(async () => {
-    if (autoPlayIntervalRef.current) {
-      clearInterval(autoPlayIntervalRef.current);
-      autoPlayIntervalRef.current = null;
-    }
-    setIsAutoPlaying(false);
-    isAutoPlayingRef.current = false;
-    
     setIsLoading(true);
     setPrediction(null);
     setShuffleCount(0);
@@ -83,12 +74,16 @@ function App() {
     setGameState(null);
     setShuffleData(null);
     setIsShuffling(false);
+    autoPlayActiveRef.current = false;
+    setIsAutoPlaying(false);
     
     try {
-      const newGameId = 'game-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substr(2, 9);
+      const counter = Math.floor(Math.random() * 1000000);
+      const newGameId = `game-${timestamp}-${random}-${counter}`;
       
       console.log('🎮 Creando nuevo juego con ID:', newGameId);
-      console.log('   ID anterior era:', gameId);
       
       const createResponse = await gameAPI.createGame(newGameId);
       
@@ -100,26 +95,10 @@ function App() {
         newGameState = stateResponse.data.game_state;
       }
       
-      const isOrdered = newGameState.shuffle_count === 0 && newGameState.cards_remaining === 52;
-      
-      console.log('🎮 Estado del nuevo juego:', {
-        game_id: newGameId,
-        shuffle_count: newGameState.shuffle_count,
-        status: newGameState.status,
-        cards_remaining: newGameState.cards_remaining,
-        es_ordenado: isOrdered
-      });
-      
-      if (!isOrdered) {
-        console.error('❌ ERROR: El nuevo juego NO tiene el mazo ordenado!', {
-          shuffle_count: newGameState.shuffle_count,
-          cards_remaining: newGameState.cards_remaining
-        });
-      }
-      
       setGameId(newGameId);
-      setGameState(newGameState);
+      setGameState(JSON.parse(JSON.stringify(newGameState)));
       setShuffleCount(newGameState.shuffle_count || 0);
+      setUnlockedPile(null);
       
       showAlert('success', '✨ Nuevo juego creado! Barajea las cartas para comenzar.');
     } catch (error) {
@@ -158,8 +137,6 @@ function App() {
       const response = await gameAPI.shuffleDeck(gameId, cutPoint);
       const newShuffleCount = response.data.shuffle_count;
       
-      console.log('🔄 [HANDLE SHUFFLE] Actualizando shuffleCount:', newShuffleCount);
-      
       setShuffleCount(newShuffleCount);
       
       const deckBefore = response.data.deck_before || null;
@@ -191,8 +168,37 @@ function App() {
     try {
       let lastDeckBefore = null;
       
+      let gameIdHash = 0;
+      for (let j = 0; j < gameId.length; j++) {
+        const char = gameId.charCodeAt(j);
+        gameIdHash = ((gameIdHash << 5) - gameIdHash) + char;
+        gameIdHash = gameIdHash & gameIdHash;
+      }
+      
+      const generateRandom = (seed) => {
+        const a = 1664525;
+        const c = 1013904223;
+        const m = Math.pow(2, 32);
+        const nextSeed = (a * seed + c) % m;
+        const random = nextSeed / m;
+        return { seed: nextSeed, random: random };
+      };
+      
+      const cutPoints = [];
+      let currentSeed = Math.abs(gameIdHash) || 1;
+      
       for (let i = 0; i < numShuffles; i++) {
-        const cutPoint = 20 + (i * 7) % 32;
+        const combinedSeed = currentSeed + (i * 1000) + (shuffleCount * 10000);
+        const result = generateRandom(combinedSeed);
+        currentSeed = result.seed;
+        
+        const cutPoint = Math.floor(result.random * 51) + 1;
+        const finalCutPoint = Math.max(1, Math.min(51, cutPoint));
+        cutPoints.push(finalCutPoint);
+      }
+      
+      for (let i = 0; i < numShuffles; i++) {
+        const cutPoint = cutPoints[i];
         
         const response = await gameAPI.shuffleDeck(gameId, cutPoint);
         const newShuffleCount = response.data.shuffle_count;
@@ -242,18 +248,13 @@ function App() {
       shuffleCompleteResolveRef.current = null;
       shuffleCompletePromiseRef.current = null;
     }
-    const updatedState = await fetchGameState();
-    console.log('✅ [SHUFFLE COMPLETE] Estado actualizado, shuffle_count:', updatedState?.shuffle_count);
+    await fetchGameState();
   };
 
   const handleShuffleFromAnimation = async (cutPoint) => {
     try {
       const response = await gameAPI.shuffleDeck(gameId, cutPoint);
       const newShuffleCount = response.data.shuffle_count;
-      
-      console.log('🔄 [SHUFFLE FROM ANIMATION] Barajeo #' + newShuffleCount);
-      console.log('   Deck antes (primeras 10):', response.data.deck_before?.slice(0, 10));
-      console.log('   Deck después (primeras 10):', response.data.deck_after?.slice(0, 10));
       
       setShuffleCount(newShuffleCount);
       
@@ -285,93 +286,21 @@ function App() {
     
     setIsLoading(true);
     try {
-      if (gameMode === 'auto') {
-        console.log('🤖 Modo automático: validando que los lugares estén vacíos...');
-        
-        const currentState = await fetchGameState(true);
-        
-        if (currentState?.status !== 'waiting') {
-          showAlert('error', '❌ Error: El juego ya está iniciado. Por favor, inicia un nuevo juego.');
-          setIsLoading(false);
-          return;
-        }
-        
-        const piles = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'];
-        let hasCards = false;
-        for (const pile of piles) {
-          const faceDownCount = currentState?.face_down_cards?.[pile] || 0;
-          const faceUpCount = Array.isArray(currentState?.piles?.[pile]) ? currentState.piles[pile].length : 0;
-          if (faceDownCount > 0 || faceUpCount > 0) {
-            hasCards = true;
-            console.warn(`⚠️ Pila ${pile} no está vacía: ${faceDownCount} abajo, ${faceUpCount} arriba`);
-          }
-        }
-        
-        if (hasCards) {
-          showAlert('error', '❌ Error: Las pilas no están vacías. Por favor, inicia un nuevo juego.');
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('✅ Validación exitosa: Todas las pilas están vacías, procediendo con el reparto...');
-      }
-      
       const response = await gameAPI.startGame(gameId);
       const newGameState = response.data.game_state;
       
-      console.log(`🎮 Modo ${gameMode}: mostrando cartas directamente`);
-      console.log('📊 Estado inicial del juego:', {
-        status: newGameState.status,
-        faceDownCards: newGameState.face_down_cards,
-        piles: Object.entries(newGameState.piles || {}).map(([p, cards]) => ({
-          pile: p,
-          cards: Array.isArray(cards) ? cards.length : 0,
-          faceDown: newGameState.face_down_cards?.[p] || 0
-        }))
-      });
       setGameState(JSON.parse(JSON.stringify(newGameState)));
-      setUnlockedPile('K');
+      setUnlockedPile(newGameState.next_flip_pile || 'K'); // ✨ BACKEND decide
       setIsDealing(false);
       setIsLoading(false);
       
       if (gameMode === 'auto') {
-        console.log('🤖 Modo automático: validando que todas las pilas tengan 4 cartas...');
-        
-        const piles = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'];
-        let allComplete = true;
-        const pileStatus = {};
-        
-        for (const pile of piles) {
-          const faceDownCount = newGameState?.face_down_cards?.[pile] || 0;
-          const faceUpCount = Array.isArray(newGameState?.piles?.[pile]) ? newGameState.piles[pile].length : 0;
-          const totalCount = faceDownCount + faceUpCount;
-          
-          pileStatus[pile] = { total: totalCount, faceUp: faceUpCount, faceDown: faceDownCount };
-          
-          if (totalCount !== 4) {
-            allComplete = false;
-            console.error(`❌ Pile ${pile} NO tiene 4 cartas (tiene ${totalCount})`);
+        setTimeout(() => {
+          if (newGameState?.status === 'playing') {
+            console.log('✅ Iniciando juego automático');
+            startAutoPlay();
           }
-        }
-        
-        if (allComplete) {
-          console.log('✅ VALIDACIÓN EXITOSA: Todas las pilas tienen 4 cartas');
-          console.log('   Estado de todas las pilas:', pileStatus);
-          
-          setTimeout(() => {
-            if (newGameState?.status === 'playing') {
-              console.log('✅ Estado confirmado como "playing", iniciando juego automático');
-              startAutoPlay();
-            } else {
-              console.error('❌ El juego no está en estado "playing", estado:', newGameState?.status);
-              showAlert('error', '❌ Error: El juego no está en estado "playing"');
-            }
-          }, 500);
-        } else {
-          console.error('❌ VALIDACIÓN FALLIDA: No todas las pilas tienen 4 cartas');
-          console.error('   Estado de las pilas:', pileStatus);
-          showAlert('error', '❌ Error: No todas las pilas tienen 4 cartas. El juego automático no puede iniciar.');
-        }
+        }, 500);
       } else {
         showAlert('success', '🚀 ¡Juego iniciado!', 2000);
       }
@@ -384,18 +313,16 @@ function App() {
   };
 
   const handleFlipCard = useCallback(async (pile) => {
-    if (isDealing) {
-      console.warn('⚠️ No se puede voltear cartas durante el reparto');
-      return;
-    }
+    if (isDealing) return;
     
     try {
+      console.log('🔄 FLIP desde', pile);
+      
       const response = await gameAPI.flipCard(gameId, pile);
       
       if (response.data.success) {
         setFlippedCard(response.data.card);
         setIsFlipping(true);
-        
         playFlip();
         
         return new Promise((resolve) => {
@@ -403,26 +330,8 @@ function App() {
             setIsFlipping(false);
             setFlippedCard(null);
             
-            if (!isDealing) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-              
-              const updatedState = await fetchGameState(false);
-              if (updatedState) {
-                console.log('🔄 Estado actualizado después de voltear carta de', pile, ':', {
-                  currentCard: updatedState.current_card,
-                  faceDownCount: updatedState.face_down_cards?.[pile] || 0,
-                  pileCards: updatedState.piles?.[pile] || [],
-                  status: updatedState.status
-                });
-                setGameState(JSON.parse(JSON.stringify(updatedState)));
-              } else if (response.data.game_state) {
-                const newGameState = response.data.game_state;
-                console.log('🔄 Usando estado de la respuesta (fallback):', {
-                  currentCard: newGameState.current_card,
-                  faceDownCount: newGameState.face_down_cards?.[pile] || 0
-                });
-                setGameState(JSON.parse(JSON.stringify(newGameState)));
-              }
+            if (response.data.game_state) {
+              setGameState(JSON.parse(JSON.stringify(response.data.game_state)));
             }
             resolve();
           }, 600);
@@ -432,19 +341,14 @@ function App() {
       showAlert('error', 'Error al voltear carta: ' + error.message);
       throw error;
     }
-  }, [gameId, fetchGameState, showAlert, playFlip, isDealing]);
-
-
-
-
+  }, [gameId, showAlert, playFlip, isDealing]);
 
   const handlePlaceCard = useCallback(async (pile) => {
-    if (isDealing) {
-      console.warn('⚠️ No se puede colocar cartas durante el reparto');
-      return;
-    }
+    if (isDealing) return;
     
     try {
+      console.log('📍 PLACE en', pile);
+      
       const response = await gameAPI.placeCard(gameId, pile);
 
       if (!response.data.success) {
@@ -454,45 +358,14 @@ function App() {
 
       playPlace();
 
-      if (!isDealing) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const updatedState = await fetchGameState(false);
-        if (updatedState) {
-          console.log('📍 Estado actualizado después de colocar carta en', pile, ':', {
-            pile: updatedState.piles?.[pile] || [],
-            count: Array.isArray(updatedState.piles?.[pile]) ? updatedState.piles[pile].length : 0,
-            faceDownCount: updatedState.face_down_cards?.[pile] || 0,
-            currentCard: updatedState.current_card,
-            status: updatedState.status,
-            allPiles: Object.entries(updatedState.piles || {}).map(([p, cards]) => ({
-              pile: p,
-              count: Array.isArray(cards) ? cards.length : 0,
-              faceDown: updatedState.face_down_cards?.[p] || 0,
-              cards: Array.isArray(cards) ? cards : []
-            }))
-          });
-          setGameState(JSON.parse(JSON.stringify(updatedState)));
-        } else if (response.data.game_state) {
-          const newGameState = response.data.game_state;
-          console.log('📍 Usando estado de la respuesta (fallback):', {
-            pile: newGameState.piles?.[pile] || [],
-            count: newGameState.piles?.[pile]?.length || 0,
-            faceDownCount: newGameState.face_down_cards?.[pile] || 0
-          });
-          setGameState(JSON.parse(JSON.stringify(newGameState)));
-        }
+      if (response.data.game_state) {
+        setGameState(JSON.parse(JSON.stringify(response.data.game_state)));
       }
 
       if (response.data.game_over) {
-        console.log('🎮 JUEGO TERMINADO', response.data);
-
-        if (autoPlayIntervalRef.current) {
-          clearInterval(autoPlayIntervalRef.current);
-          autoPlayIntervalRef.current = null;
-        }
+        console.log('🎮 JUEGO TERMINADO');
+        autoPlayActiveRef.current = false;
         setIsAutoPlaying(false);
-
         showAlert(response.data.won ? 'success' : 'error', response.data.message, 2000);
         setUnlockedPile(null);
 
@@ -506,284 +379,123 @@ function App() {
           }, 1000);
         }
       } else {
-        setUnlockedPile(pile);
-        console.log('🔓 Pila desbloqueada:', pile, '- Todas las demás están bloqueadas');
+        // ✨ BACKEND indica desde dónde voltear siguiente
+        const nextPile = response.data.next_flip_pile;
+        setUnlockedPile(nextPile);
+        console.log('✅ Siguiente flip desde:', nextPile);
       }
 
     } catch (error) {
       console.error('❌ Error al colocar carta:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Error desconocido';
-      console.error('   Detalles del error:', {
-        status: error.response?.status,
-        error: errorMessage,
-        pile: pile
-      });
-      
-      try {
-        const updatedState = await fetchGameState(false);
-        if (updatedState) {
-          console.log('   Estado actualizado después del error:', {
-            status: updatedState.status,
-            currentCard: updatedState.current_card,
-            gameOver: updatedState.status !== 'playing'
-          });
-          
-          if (updatedState.status !== 'playing') {
-            setGameState(updatedState);
-            return;
-          }
-        }
-      } catch (fetchError) {
-        console.error('   Error al obtener estado actualizado:', fetchError);
-      }
-      
       if (!isAutoPlaying) {
-        showAlert('error', `Error al colocar carta: ${errorMessage}`);
+        showAlert('error', `Error al colocar carta: ${error.message}`);
       }
-      
       throw error;
     }
-  }, [gameId, fetchGameState, showAlert, userMessage, playPlace, isDealing, isAutoPlaying]);
+  }, [gameId, showAlert, userMessage, playPlace, isDealing, isAutoPlaying]);
 
-  const autoPlayMove = useCallback(async () => {
+  // ============================================
+  // ✨ NUEVO MODO AUTOMÁTICO - LÓGICA SIMPLE
+  // ============================================
+
+  const executeAutoMove = useCallback(async () => {
     try {
-      const currentState = await fetchGameState(false);
+      // 1. Obtener estado fresco
+      const currentState = await fetchGameState(true);
       
-      if (!currentState) {
-        console.error('🤖 AUTO: No se pudo obtener el estado del juego');
-        if (autoPlayIntervalRef.current) {
-          clearInterval(autoPlayIntervalRef.current);
-          autoPlayIntervalRef.current = null;
-        }
+      if (!currentState || currentState.status !== 'playing') {
+        console.log('🤖 Juego terminado');
+        autoPlayActiveRef.current = false;
         setIsAutoPlaying(false);
-        return;
+        return false; // Detener
       }
 
-      if (currentState.status !== 'playing') {
-        console.log('🤖 AUTO: El juego terminó. Estado:', currentState.status);
-        setGameState(currentState);
-        if (autoPlayIntervalRef.current) {
-          clearInterval(autoPlayIntervalRef.current);
-          autoPlayIntervalRef.current = null;
-        }
-        setIsAutoPlaying(false);
-        return;
-      }
-
+      // 2. ¿Hay carta para colocar?
       if (currentState.current_card) {
         const cardValue = currentState.current_card[0];
-        console.log('🤖 AUTO: Colocando carta', currentState.current_card, 'automáticamente en', cardValue);
+        console.log('🤖 Colocando', currentState.current_card, 'en', cardValue);
         
-        const latestState = await fetchGameState(false);
-        if (!latestState) {
-          console.warn('🤖 AUTO: No se pudo obtener el estado, esperando siguiente movimiento...');
-          return;
-        }
+        await new Promise(resolve => setTimeout(resolve, 800));
+        await handlePlaceCard(cardValue);
+        await new Promise(resolve => setTimeout(resolve, 600));
         
-        if (latestState.status !== 'playing') {
-          console.log('🤖 AUTO: El juego terminó. Estado:', latestState.status);
-          setGameState(latestState);
-          if (autoPlayIntervalRef.current) {
-            clearInterval(autoPlayIntervalRef.current);
-            autoPlayIntervalRef.current = null;
-          }
-          setIsAutoPlaying(false);
-          return;
-        }
-        
-        if (!latestState.current_card) {
-          console.warn('🤖 AUTO: No hay carta actual, esperando siguiente movimiento...');
-          setGameState(latestState);
-          return;
-        }
-        
-        const latestCardValue = latestState.current_card[0];
-        if (latestCardValue !== cardValue) {
-          console.warn('🤖 AUTO: La carta cambió. Era', currentState.current_card, 'ahora es', latestState.current_card);
-          setGameState(latestState);
-          return;
-        }
-        
-        setGameState(latestState);
-        
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        try {
-          await handlePlaceCard(cardValue);
-          
-          await new Promise(resolve => setTimeout(resolve, 200));
-          const finalState = await fetchGameState(false);
-          if (finalState) {
-            setGameState(JSON.parse(JSON.stringify(finalState)));
-          }
-        } catch (error) {
-          console.error('🤖 AUTO: Error al colocar carta:', error);
-          const errorMessage = error.response?.data?.error || error.message || 'Error desconocido';
-          console.error('   Detalles:', {
-            status: error.response?.status,
-            error: errorMessage,
-            card: latestState.current_card,
-            targetPile: cardValue
-          });
-          
-          if (errorMessage.includes('No hay carta actual')) {
-            console.log('🤖 AUTO: La carta ya fue colocada o cambió, continuando...');
-            const updatedState = await fetchGameState(false);
-            if (updatedState) {
-              setGameState(JSON.parse(JSON.stringify(updatedState)));
-            }
-            isAutoPlayingRef.current = false;
-            return;
-          }
-          
-          const updatedState = await fetchGameState(false);
-          if (updatedState) {
-            setGameState(JSON.parse(JSON.stringify(updatedState)));
-            if (updatedState.status !== 'playing') {
-              if (autoPlayIntervalRef.current) {
-                clearInterval(autoPlayIntervalRef.current);
-                autoPlayIntervalRef.current = null;
-              }
-              setIsAutoPlaying(false);
-              isAutoPlayingRef.current = false;
-              return;
-            }
-          }
-          isAutoPlayingRef.current = false;
-          return;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return;
+        return true; // Continuar
+      } 
+      
+      // 3. No hay carta, voltear siguiente
+      const nextPile = currentState.next_flip_pile;
+      
+      if (!nextPile) {
+        console.log('🤖 No hay más cartas para voltear');
+        autoPlayActiveRef.current = false;
+        setIsAutoPlaying(false);
+        return false; // Detener
       }
 
-      const piles = ['K', 'Q', 'J', '0', '9', '8', '7', '6', '5', '4', '3', '2', 'A'];
-      let pileToFlip = unlockedPile || 'K';
+      console.log('🤖 Volteando desde', nextPile);
       
-      const faceDownCount = currentState.face_down_cards?.[pileToFlip] || 0;
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await handleFlipCard(nextPile);
+      await new Promise(resolve => setTimeout(resolve, 600));
       
-      if (faceDownCount === 0) {
-        let nextPile = null;
-        for (const p of piles) {
-          const count = currentState.face_down_cards?.[p] || 0;
-          if (count > 0) {
-            nextPile = p;
-            break;
-          }
-        }
-        
-        if (!nextPile) {
-          console.log('🤖 AUTO: No hay más cartas boca abajo');
-          isAutoPlayingRef.current = false;
-          if (autoPlayIntervalRef.current) {
-            clearInterval(autoPlayIntervalRef.current);
-            autoPlayIntervalRef.current = null;
-          }
-          setIsAutoPlaying(false);
-          return;
-        }
-        
-        setUnlockedPile(nextPile);
-        pileToFlip = nextPile;
-      }
-      
-      const targetPile = pileToFlip;
-      
-      console.log('🤖 AUTO: Volteando carta de', targetPile);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      try {
-        await handleFlipCard(targetPile);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        isAutoPlayingRef.current = false;
-        return;
-      } catch (error) {
-        console.error('🤖 AUTO: Error al voltear carta:', error);
-        const errorState = await fetchGameState(false);
-        if (errorState) {
-          setGameState(JSON.parse(JSON.stringify(errorState)));
-          if (errorState.status !== 'playing') {
-            if (autoPlayIntervalRef.current) {
-              clearInterval(autoPlayIntervalRef.current);
-              autoPlayIntervalRef.current = null;
-            }
-            setIsAutoPlaying(false);
-            isAutoPlayingRef.current = false;
-            return;
-          }
-        }
-        isAutoPlayingRef.current = false;
-        return;
-      }
+      return true; // Continuar
 
     } catch (error) {
-      console.error('🤖 AUTO: Error general', error);
-      isAutoPlayingRef.current = false;
-      const errorState = await fetchGameState(false);
-      if (errorState) {
-        setGameState(JSON.parse(JSON.stringify(errorState)));
-        if (errorState.status !== 'playing') {
-          if (autoPlayIntervalRef.current) {
-            clearInterval(autoPlayIntervalRef.current);
-            autoPlayIntervalRef.current = null;
-          }
-          setIsAutoPlaying(false);
-        }
-      }
+      console.error('🤖 Error:', error);
+      autoPlayActiveRef.current = false;
+      setIsAutoPlaying(false);
+      return false;
     }
-  }, [fetchGameState, handleFlipCard, handlePlaceCard, unlockedPile]);
+  }, [fetchGameState, handleFlipCard, handlePlaceCard]);
 
-  const startAutoPlay = useCallback(() => {
-    if (isAutoPlaying) {
-      console.log('⚠️ El juego automático ya está activo');
+  const startAutoPlay = useCallback(async () => {
+    if (isAutoPlaying || autoPlayActiveRef.current) {
+      console.log('🤖 Ya está en modo automático');
       return;
     }
     
+    console.log('🤖 Iniciando modo automático...');
     setIsAutoPlaying(true);
+    autoPlayActiveRef.current = true;
     showAlert('success', '🤖 Modo automático activado', 2000);
     
-    setTimeout(() => {
-      autoPlayMove();
-    }, 3000);
+    // Bucle automático
+    const autoLoop = async () => {
+      if (!autoPlayActiveRef.current) {
+        console.log('🤖 Bucle detenido');
+        return;
+      }
+      
+      const shouldContinue = await executeAutoMove();
+      
+      if (shouldContinue && autoPlayActiveRef.current) {
+        setTimeout(autoLoop, 300); // Siguiente movimiento
+      }
+    };
     
-    autoPlayIntervalRef.current = setInterval(() => {
-      autoPlayMove();
-    }, 4500);
-  }, [autoPlayMove, showAlert, isAutoPlaying]);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    autoLoop();
+  }, [isAutoPlaying, showAlert, executeAutoMove]);
+
+  const stopAutoPlay = useCallback(() => {
+    autoPlayActiveRef.current = false;
+    setIsAutoPlaying(false);
+    showAlert('info', '⏸️ Modo automático detenido', 2000);
+  }, [showAlert]);
 
   const handleAutoPlay = useCallback(() => {
-    const currentStatus = gameState?.status;
-    if (currentStatus !== 'playing') {
-      fetchGameState().then((updatedState) => {
-        if (updatedState?.status !== 'playing') {
-          showAlert('warning', '⚠️ Debes iniciar el juego primero');
-          return;
-        }
-        startAutoPlay();
-      });
+    if (isAutoPlaying) {
+      stopAutoPlay();
       return;
     }
 
-    if (isAutoPlaying) {
-      if (autoPlayIntervalRef.current) {
-        clearInterval(autoPlayIntervalRef.current);
-        autoPlayIntervalRef.current = null;
-      }
-      setIsAutoPlaying(false);
-      showAlert('info', '⏸️ Modo automático detenido');
-    } else {
-      startAutoPlay();
+    if (gameState?.status !== 'playing') {
+      showAlert('warning', '⚠️ Debes iniciar el juego primero');
+      return;
     }
-  }, [gameState?.status, isAutoPlaying, startAutoPlay, showAlert, fetchGameState]);
 
-  useEffect(() => {
-    return () => {
-      if (autoPlayIntervalRef.current) {
-        clearInterval(autoPlayIntervalRef.current);
-      }
-    };
-  }, []);
+    startAutoPlay();
+  }, [gameState?.status, isAutoPlaying, startAutoPlay, stopAutoPlay, showAlert]);
 
   return (
     <div className="App">
@@ -810,93 +522,20 @@ function App() {
             setShowQuestionModal(false);
             setIsLoading(true);
             try {
-              if (gameMode === 'auto') {
-                console.log('🤖 Modo automático: validando que los lugares estén vacíos...');
-                
-                const currentState = await fetchGameState(true);
-                
-                if (currentState?.status !== 'waiting') {
-                  showAlert('error', '❌ Error: El juego ya está iniciado. Por favor, inicia un nuevo juego.');
-                  setIsLoading(false);
-                  return;
-                }
-                
-                const piles = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'];
-                let hasCards = false;
-                for (const pile of piles) {
-                  const faceDownCount = currentState?.face_down_cards?.[pile] || 0;
-                  const faceUpCount = Array.isArray(currentState?.piles?.[pile]) ? currentState.piles[pile].length : 0;
-                  if (faceDownCount > 0 || faceUpCount > 0) {
-                    hasCards = true;
-                    console.warn(`⚠️ Pila ${pile} no está vacía: ${faceDownCount} abajo, ${faceUpCount} arriba`);
-                  }
-                }
-                
-                if (hasCards) {
-                  showAlert('error', '❌ Error: Las pilas no están vacías. Por favor, inicia un nuevo juego.');
-                  setIsLoading(false);
-                  return;
-                }
-                
-                console.log('✅ Validación exitosa: Todas las pilas están vacías, procediendo con el reparto...');
-              }
-              
               const response = await gameAPI.startGame(gameId);
               const newGameState = response.data.game_state;
               
-              console.log(`🎮 Modo ${gameMode}: mostrando cartas directamente`);
-              console.log('📊 Estado inicial del juego:', {
-                status: newGameState.status,
-                faceDownCards: newGameState.face_down_cards,
-                piles: Object.entries(newGameState.piles || {}).map(([p, cards]) => ({
-                  pile: p,
-                  cards: Array.isArray(cards) ? cards.length : 0,
-                  faceDown: newGameState.face_down_cards?.[p] || 0
-                }))
-              });
               setGameState(JSON.parse(JSON.stringify(newGameState)));
-              setUnlockedPile('K');
+              setUnlockedPile(newGameState.next_flip_pile || 'K');
               setIsDealing(false);
               setIsLoading(false);
               
               if (gameMode === 'auto') {
-                console.log('🤖 Modo automático: validando que todas las pilas tengan 4 cartas...');
-                
-                const piles = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'];
-                let allComplete = true;
-                const pileStatus = {};
-                
-                for (const pile of piles) {
-                  const faceDownCount = newGameState?.face_down_cards?.[pile] || 0;
-                  const faceUpCount = Array.isArray(newGameState?.piles?.[pile]) ? newGameState.piles[pile].length : 0;
-                  const totalCount = faceDownCount + faceUpCount;
-                  
-                  pileStatus[pile] = { total: totalCount, faceUp: faceUpCount, faceDown: faceDownCount };
-                  
-                  if (totalCount !== 4) {
-                    allComplete = false;
-                    console.error(`❌ Pile ${pile} NO tiene 4 cartas (tiene ${totalCount})`);
+                setTimeout(() => {
+                  if (newGameState?.status === 'playing') {
+                    startAutoPlay();
                   }
-                }
-                
-                if (allComplete) {
-                  console.log('✅ VALIDACIÓN EXITOSA: Todas las pilas tienen 4 cartas');
-                  console.log('   Estado de todas las pilas:', pileStatus);
-                  
-                  setTimeout(() => {
-                    if (newGameState?.status === 'playing') {
-                      console.log('✅ Estado confirmado como "playing", iniciando juego automático');
-                      startAutoPlay();
-                    } else {
-                      console.error('❌ El juego no está en estado "playing", estado:', newGameState?.status);
-                      showAlert('error', '❌ Error: El juego no está en estado "playing"');
-                    }
-                  }, 500);
-                } else {
-                  console.error('❌ VALIDACIÓN FALLIDA: No todas las pilas tienen 4 cartas');
-                  console.error('   Estado de las pilas:', pileStatus);
-                  showAlert('error', '❌ Error: No todas las pilas tienen 4 cartas. El juego automático no puede iniciar.');
-                }
+                }, 500);
               } else {
                 showAlert('success', '🚀 ¡Juego iniciado!', 2000);
               }
@@ -973,7 +612,6 @@ function App() {
           </motion.div>
         )}
 
-        {}
         {showPredictionResult && prediction && (
           <PredictionResultModal
             isOpen={showPredictionResult}

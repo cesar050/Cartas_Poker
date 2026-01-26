@@ -60,7 +60,8 @@ const ShuffleAnimation = ({ isShuffling, cutPoint: initialCutPoint, deckBefore, 
         setDisplayCards(deckAfter);
       }
     }
-  }, [deckAfter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckAfter]); // phase y displayCards se actualizan dentro del efecto, no deben estar en dependencias
 
   useEffect(() => {
     if (phase === 'finalFan' && deckAfter && deckAfter.length > 0) {
@@ -77,7 +78,8 @@ const ShuffleAnimation = ({ isShuffling, cutPoint: initialCutPoint, deckBefore, 
         console.log('   ⚠️ Son iguales - puede que el barajeo no haya funcionado');
       }
     }
-  }, [phase, deckAfter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, deckAfter]); // displayCards se actualiza dentro del efecto, no debe estar en dependencias
 
   useEffect(() => {
     if (deckAfter && deckAfter.length > 0) {

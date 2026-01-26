@@ -204,13 +204,42 @@ def place_card():
         
         print(f"📍 Intentando colocar {game.current_card} en montón {pile}")
         
+        # Guardar face_down_cards ANTES de place_card para validar después
+        face_down_before = {k: len(v) for k, v in game.face_down_cards.items()}
+        k_before = face_down_before.get('K', 0)
+        
         result = game.place_card(pile)
         
+        # Validar que face_down_cards NO cambió después de place_card
+        face_down_after = {k: len(v) for k, v in game.face_down_cards.items()}
+        k_after = face_down_after.get('K', 0)
+        
+        # VALIDACIÓN ESPECÍFICA PARA K
+        if pile != 'K' and k_before != k_after:
+            print(f"❌❌❌ ERROR CRÍTICO K EN ROUTE: K cambió de {k_before} a {k_after} después de colocar carta en {pile}!")
+            print(f"   face_down_before: {face_down_before}")
+            print(f"   face_down_after: {face_down_after}")
+            # CORRECCIÓN: Restaurar K al valor correcto
+            # Calcular cuántas cartas se perdieron
+            diff = k_before - k_after
+            if diff > 0:
+                # Se perdieron cartas, pero no sabemos cuáles eran
+                # Lo mejor es forzar el conteo correcto
+                # Pero no podemos restaurar las cartas exactas
+                print(f"   ⚠️ No se puede restaurar las cartas exactas, pero el conteo debería ser {k_before}")
+        
         print(f"   Resultado: {result}")
+        print(f"   K antes: {k_before}, K después: {k_after}, diferencia: {k_after - k_before}")
+        
+        # Obtener el estado - NO corregir, solo reportar si hay un bug
+        game_state = game.get_game_state()
+        if pile != 'K' and game_state['face_down_cards'].get('K', 0) != k_before:
+            print(f"   ❌❌❌ BUG EN game_state: K es {game_state['face_down_cards'].get('K')} pero debería ser {k_before}")
+            print(f"   ⚠️ NO se corrige - esto es un bug que debe ser encontrado y arreglado")
         
         return jsonify({
             **result,
-            'game_state': game.get_game_state()
+            'game_state': game_state
         }), 200
         
     except Exception as e:

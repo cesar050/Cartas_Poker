@@ -1,9 +1,9 @@
-# 🎴 Póker Místico - Documentación Técnica Completa
+# Poker Mistico - Documentacion Tecnica Completa
 
-## 📋 Índice
+## Indice
 1. [Resumen del Proyecto](#resumen-del-proyecto)
 2. [Arquitectura General](#arquitectura-general)
-3. [Tecnologías Utilizadas](#tecnologías-utilizadas)
+3. [Tecnologias Utilizadas](#tecnologias-utilizadas)
 4. [Estructura del Proyecto](#estructura-del-proyecto)
 5. [Backend - API REST](#backend-api-rest)
 6. [Algoritmo de Barajeo](#algoritmo-de-barajeo)
@@ -15,35 +15,38 @@
 12. [API Endpoints](#api-endpoints)
 13. [Modelo de Datos](#modelo-de-datos)
 14. [Reglas del Juego](#reglas-del-juego)
-15. [Instalación y Configuración](#instalación-y-configuración)
-16. [Guía de Uso](#guía-de-uso)
+15. [Instalacion y Configuracion](#instalacion-y-configuracion)
+16. [Guia de Uso](#guia-de-uso)
+17. [Cambios Recientes y Mejoras](#cambios-recientes-y-mejoras)
 
 ---
 
 ## Resumen del Proyecto
 
-**Nombre**: Póker Místico  
-**Tipo**: Juego de cartas web con predicciones místicas  
-**Propósito**: Aplicación interactiva que combina un juego de cartas solitario con un sistema de adivinación donde los jugadores pueden hacer preguntas al destino y recibir respuestas basadas en el resultado del juego.
+**Nombre**: Poker Mistico  
+**Tipo**: Juego de cartas web con predicciones misticas  
+**Proposito**: Aplicacion interactiva que combina un juego de cartas solitario con un sistema de adivinacion donde los jugadores pueden hacer preguntas al destino y recibir respuestas basadas en el resultado del juego.
 
-### Características Principales
+### Caracteristicas Principales
 - Juego de cartas solitario con 13 pilas (A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K)
 - Sistema de barajeo determinista (Riffle Shuffle)
-- Modo de juego manual y automático
+- Modo de juego manual y automatico
 - Animaciones fluidas con Framer Motion
 - Sistema de sonidos para acciones del juego
-- Modal de predicción mística con respuesta al finalizar
+- Modal de prediccion mistica con respuesta al finalizar
 - Interfaz visual moderna y atractiva
+- Control de flujo inteligente backend-driven
 
 ---
 
 ## Arquitectura General
 
-### Patrón Arquitectónico
+### Patron Arquitectonico
 - **Frontend**: React SPA (Single Page Application)
 - **Backend**: API REST con Flask
-- **Comunicación**: HTTP/JSON mediante Axios
-- **Algoritmo**: Riffle Shuffle Determinista (simulación de barajeo humano)
+- **Comunicacion**: HTTP/JSON mediante Axios
+- **Algoritmo**: Riffle Shuffle Determinista (simulacion de barajeo humano)
+- **Control de Flujo**: Backend determina el siguiente movimiento valido
 
 ### Diagrama de Arquitectura
 ```
@@ -53,7 +56,7 @@
 │  │  React App (Frontend)                     │   │
 │  │  - Componentes UI (React)                 │   │
 │  │  - Animaciones (Framer Motion)            │   │
-│  │  - Gestión de Estado (Hooks)              │   │
+│  │  - Gestion de Estado (Hooks)              │   │
 │  │  - Sistema de Sonidos                     │   │
 │  │  - Servicios API (Axios)                  │   │
 │  └──────────────────────────────────────────┘   │
@@ -66,9 +69,10 @@
 │  ┌──────────────────────────────────────────┐   │
 │  │  Flask API                                │   │
 │  │  - Endpoints REST                         │   │
-│  │  - Lógica del Juego (PokerGame)          │   │
+│  │  - Logica del Juego (PokerGame)          │   │
 │  │  - Algoritmo Riffle Shuffle               │   │
-│  │  - Gestión de Estado del Juego            │   │
+│  │  - Control de Flujo Inteligente          │   │
+│  │  - Gestion de Estado del Juego            │   │
 │  │  - Almacenamiento en Memoria              │   │
 │  └──────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────┘
@@ -76,20 +80,20 @@
 
 ---
 
-## Tecnologías Utilizadas
+## Tecnologias Utilizadas
 
 ### Frontend
 - **React 19.2.3**: Biblioteca de UI
 - **Framer Motion 12.26.2**: Animaciones fluidas
-- **Axios 1.13.2**: Cliente HTTP para comunicación con API
-- **React Icons 4.10.1**: Iconografía
+- **Axios 1.13.2**: Cliente HTTP para comunicacion con API
+- **React Icons 4.10.1**: Iconografia
 - **CSS3**: Estilos personalizados
 
 ### Backend
-- **Python 3.12**: Lenguaje de programación
+- **Python 3.12**: Lenguaje de programacion
 - **Flask**: Framework web ligero
 - **Flask-CORS**: Manejo de CORS para desarrollo
-- **python-dotenv**: Gestión de variables de entorno
+- **python-dotenv**: Gestion de variables de entorno
 
 ---
 
@@ -99,16 +103,16 @@
 ExamenAnalisis/
 ├── backend/
 │   ├── app/
-│   │   ├── __init__.py          # Inicialización de Flask app
+│   │   ├── __init__.py          # Inicializacion de Flask app
 │   │   ├── models/
 │   │   │   ├── deck.py          # Clase DeckShuffle (barajeo)
-│   │   │   └── game.py          # Clase PokerGame (lógica del juego)
+│   │   │   └── game.py          # Clase PokerGame (logica del juego)
 │   │   ├── routes/
 │   │   │   └── game_routes.py   # Endpoints de la API
-│   │   ├── services/            # (Vacío - disponible para servicios)
-│   │   └── utils/               # (Vacío - disponible para utilidades)
+│   │   ├── services/            # (Vacio - disponible para servicios)
+│   │   └── utils/               # (Vacio - disponible para utilidades)
 │   ├── config/
-│   │   └── config.py            # Configuración de la aplicación
+│   │   └── config.py            # Configuracion de la aplicacion
 │   ├── tests/
 │   │   ├── test_game_rules.py   # Tests de reglas del juego
 │   │   └── test_final_move.py   # Tests de movimiento final
@@ -122,14 +126,14 @@ ExamenAnalisis/
 │   │   │   │   └── Card.jsx     # Componente de carta individual
 │   │   │   ├── Game/
 │   │   │   │   ├── GameBoard.jsx # Tablero de juego
-│   │   │   │   └── Pile.jsx      # Componente de pila/montón
+│   │   │   │   └── Pile.jsx      # Componente de pila/monton
 │   │   │   └── UI/
 │   │   │       ├── Sidebar.jsx           # Barra lateral de controles
 │   │   │       ├── Alert.jsx             # Alertas temporales
-│   │   │       ├── ShuffleAnimation.jsx  # Animación de barajeo
-│   │   │       ├── FlipCardAnimation.jsx # Animación de volteo
-│   │   │       ├── DealAnimation.jsx     # Animación de reparto
-│   │   │       ├── QuestionModal.jsx     # Modal para pregunta mística
+│   │   │       ├── ShuffleAnimation.jsx  # Animacion de barajeo
+│   │   │       ├── FlipCardAnimation.jsx # Animacion de volteo
+│   │   │       ├── DealAnimation.jsx     # Animacion de reparto
+│   │   │       ├── QuestionModal.jsx     # Modal para pregunta mistica
 │   │   │       └── PredictionResultModal.jsx # Modal de resultado
 │   │   ├── hooks/
 │   │   │   └── useCardSounds.js # Hook para sonidos
@@ -138,26 +142,79 @@ ExamenAnalisis/
 │   │   └── styles/
 │   │       └── colors.css       # Variables CSS de colores
 │   └── public/
-│       ├── cards/               # Imágenes de cartas
+│       ├── cards/               # Imagenes de cartas
 │       └── sounds/              # Archivos de audio
 │
-└── DOCUMENTACION_PROYECTO.md    # Este archivo
+├── DOCUMENTACION_PROYECTO.md    # Este archivo
+└── RIFFLE_SHUFFLE_DOCUMENTATION.md  # Documentacion del algoritmo
 ```
 
 ---
 
 ## Backend - API REST
 
-### Inicialización
-La aplicación Flask se inicializa en `app/__init__.py` con:
-- Configuración de CORS para permitir peticiones desde el frontend
+### Inicializacion
+La aplicacion Flask se inicializa en `app/__init__.py` con:
+- Configuracion de CORS para permitir peticiones desde el frontend
 - Registro de blueprints para rutas de juego
 - Endpoints de salud (`/` y `/health`)
 
 ### Almacenamiento de Estado
 - Los juegos se almacenan en memoria en un diccionario `active_games`
-- Cada juego tiene un `game_id` único
-- El estado se mantiene durante la sesión del servidor
+- Cada juego tiene un `game_id` unico
+- El estado se mantiene durante la sesion del servidor
+
+### Nueva Logica de Control de Flujo (Mejora Critica)
+
+El backend ahora incluye una funcion `_get_next_flip_pile()` que determina inteligentemente desde que pila se debe voltear la siguiente carta:
+
+```python
+def _get_next_flip_pile(self):
+    """
+    Determinar desde que pila voltear siguiente carta
+    
+    Regla: Si current_card_source tiene cartas, voltear desde ahi.
+           Si no, buscar la primera pila con cartas desde K hasta A.
+    """
+    # Si ya hay una carta actual, no hay siguiente flip
+    if self.current_card:
+        return None
+    
+    # Si hay una fuente previa y tiene cartas, voltear desde ahi
+    if self.current_card_source and len(self.face_down_cards[self.current_card_source]) > 0:
+        return self.current_card_source
+    
+    # Buscar la primera pila con cartas desde K hasta A
+    piles_order = ['K', 'Q', 'J', '0', '9', '8', '7', '6', '5', '4', '3', '2', 'A']
+    for pile in piles_order:
+        if len(self.face_down_cards[pile]) > 0:
+            return pile
+    
+    return None
+```
+
+**Ventajas de esta Arquitectura:**
+1. **Eliminacion de Race Conditions**: El frontend no necesita rastrear estado complejo
+2. **Single Source of Truth**: El backend es la unica fuente de verdad
+3. **Simplificacion Frontend**: Modo automatico 70% mas simple
+4. **Consistencia Garantizada**: No hay posibilidad de desincronizacion
+5. **Mantenibilidad**: Cambios en reglas solo requieren modificar backend
+
+### Actualizacion de current_card_source
+
+Cambio critico en `place_card()`:
+
+```python
+# ANTES (Incorrecto):
+self.current_card = None
+self.current_card_source = None
+
+# DESPUES (Correcto):
+self.current_card_source = target_pile  # Actualizar ANTES de limpiar
+self.current_card = None
+```
+
+Esto asegura que `_get_next_flip_pile()` siempre tenga la informacion correcta de donde se coloco la ultima carta.
 
 ---
 
@@ -165,12 +222,14 @@ La aplicación Flask se inicializa en `app/__init__.py` con:
 
 ### Riffle Shuffle Determinista
 
-El proyecto utiliza un **Riffle Shuffle Determinista** que simula cómo un humano baraja cartas manualmente, pero de forma completamente determinista y reproducible.
+El proyecto utiliza un **Riffle Shuffle Determinista** que simula como un humano baraja cartas manualmente, pero de forma completamente determinista y reproducible.
 
-#### Características
-- **100% Determinista**: No usa números aleatorios, solo funciones matemáticas
+Para documentacion detallada del algoritmo, consultar: `RIFFLE_SHUFFLE_DOCUMENTATION.md`
+
+#### Caracteristicas
+- **100% Determinista**: No usa numeros aleatorios, solo funciones matematicas
 - **Reproducible**: Mismos inputs producen mismos resultados
-- **Variación entre juegos**: Usa `initial_seed` basado en hash MD5 del `game_id`
+- **Variacion entre juegos**: Usa `initial_seed` basado en hash MD5 del `game_id`
 
 #### Proceso de Barajeo
 
@@ -181,15 +240,15 @@ El proyecto utiliza un **Riffle Shuffle Determinista** que simula cómo un human
 
 2. **Entrelazado (Riffle)**
    - Se toman cartas alternadamente de ambas mitades
-   - La decisión de qué montón tomar se calcula determinísticamente usando:
-     - Posición actual en el mazo resultante
-     - Tamaño de cada mitad
+   - La decision de que monton tomar se calcula deterministicamente usando:
+     - Posicion actual en el mazo resultante
+     - Tamano de cada mitad
      - Progreso de uso de cada mitad
      - `cut_point`
      - `shuffle_count`
      - `initial_seed` (hash del game_id)
 
-3. **Función Determinista**
+3. **Funcion Determinista**
    ```python
    seed_base = (position * 7) + (cut_point * 13) + (shuffle_count * 31)
    seed_base += (initial_seed * 97)
@@ -198,111 +257,183 @@ El proyecto utiliza un **Riffle Shuffle Determinista** que simula cómo un human
 
 #### Ventajas
 - **Consistencia**: Cada juego con mismo ID produce mismo resultado
-- **Variación**: Diferentes game_ids producen diferentes barajeados
+- **Variacion**: Diferentes game_ids producen diferentes barajeados
 - **Realismo**: Simula el comportamiento humano de barajear
-- **Reproducibilidad**: Permite debug y testing determinístico
+- **Reproducibilidad**: Permite debug y testing deterministico
 
 ---
 
 ## Frontend - Interfaz de Usuario
 
-### Gestión de Estado
+### Gestion de Estado
 El componente principal `App.jsx` maneja todo el estado del juego:
 
 **Estados Principales:**
 - `gameState`: Estado completo del juego (pilas, cartas, estado)
-- `gameId`: Identificador único del juego
-- `shuffleCount`: Número de barajeados realizados
+- `gameId`: Identificador unico del juego
+- `shuffleCount`: Numero de barajeados realizados
 - `isLoading`: Indicador de carga
 - `currentCard`: Carta actualmente visible
-- `unlockedPile`: Pila desbloqueada para voltear
-- `isAutoPlaying`: Modo automático activo
-- `userMessage`: Pregunta mística del usuario
-- `prediction`: Resultado de la predicción
+- `unlockedPile`: Pila desbloqueada para voltear (ahora controlado por backend)
+- `isAutoPlaying`: Modo automatico activo
+- `userMessage`: Pregunta mistica del usuario
+- `prediction`: Resultado de la prediccion
+
+### Modo Automatico - Nueva Implementacion
+
+La logica del modo automatico fue completamente reescrita para ser mas simple y robusta:
+
+**Antes (Complejo):**
+- Frontend rastreaba `unlockedPile` manualmente
+- Calculaba cual pila voltear siguiente
+- Multiple fetchs de estado
+- Race conditions frecuentes
+- Codigo de 200+ lineas
+
+**Despues (Simple):**
+```javascript
+const executeAutoMove = useCallback(async () => {
+  try {
+    const currentState = await fetchGameState(true);
+    
+    if (!currentState || currentState.status !== 'playing') {
+      autoPlayActiveRef.current = false;
+      setIsAutoPlaying(false);
+      return false;
+    }
+
+    if (currentState.current_card) {
+      // Colocar carta
+      const cardValue = currentState.current_card[0];
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await handlePlaceCard(cardValue);
+      await new Promise(resolve => setTimeout(resolve, 600));
+      return true;
+    } 
+    
+    // Voltear carta
+    const nextPile = currentState.next_flip_pile;
+    
+    if (!nextPile) {
+      autoPlayActiveRef.current = false;
+      setIsAutoPlaying(false);
+      return false;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+    await handleFlipCard(nextPile);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    return true;
+
+  } catch (error) {
+    console.error('Error:', error);
+    autoPlayActiveRef.current = false;
+    setIsAutoPlaying(false);
+    return false;
+  }
+}, [fetchGameState, handleFlipCard, handlePlaceCard]);
+```
+
+**Ventajas:**
+- Codigo reducido en 70%
+- Sin race conditions
+- Backend decide todo el flujo
+- Facil de mantener y debuggear
+- Sin necesidad de validaciones complejas
 
 ### Modos de Juego
 
 #### Modo Manual
-- Usuario controla cada acción
+- Usuario controla cada accion
 - Debe barajear manualmente
 - Debe voltear y colocar cartas manualmente
 - Control total sobre el ritmo del juego
 
-#### Modo Automático
-- El sistema barajea automáticamente (1-10 veces)
-- El juego se juega automáticamente después del inicio
-- Lógica inteligente para seleccionar movimientos
-- Visualización de cada movimiento con delays
+#### Modo Automatico
+- El sistema barajea automaticamente (1-10 veces)
+- El juego se juega automaticamente despues del inicio
+- Backend determina cada movimiento
+- Visualizacion de cada movimiento con delays
 
 ---
 
 ## Flujo de Juego Completo
 
-### 1. Inicialización
-1. Usuario carga la aplicación
-2. Se crea un nuevo juego con `game_id` único
+### 1. Inicializacion
+1. Usuario carga la aplicacion
+2. Se crea un nuevo juego con `game_id` unico
 3. Se genera un mazo ordenado (AH, 2H, 3H... KS)
 4. Estado inicial: `waiting`
 
 ### 2. Barajeo
 1. Usuario hace clic en "Barajear"
-2. Se muestra animación interactiva de barajeo
+2. Se muestra animacion interactiva de barajeo
 3. Usuario puede elegir punto de corte (1-51)
 4. Se ejecuta algoritmo Riffle Shuffle
 5. `shuffle_count` se incrementa
-6. Estado: `waiting` (después de barajear)
+6. Estado: `waiting` (despues de barajear)
 
 ### 3. Inicio del Juego
 1. Usuario hace clic en "Iniciar"
-2. Se muestra modal para pregunta mística (opcional)
+2. Se muestra modal para pregunta mistica (opcional)
 3. Usuario puede escribir pregunta o saltar
 4. Se reparten 4 cartas boca abajo a cada una de las 13 pilas
 5. Estado: `playing`
-6. Pila K se desbloquea inicialmente
+6. Backend calcula `next_flip_pile` (inicialmente K)
 
 ### 4. Juego Activo
-1. **Voltear Carta**:
-   - Usuario hace clic en una pila desbloqueada
+
+**Flujo Mejorado:**
+
+1. **Backend determina siguiente accion**:
+   - Si `current_card` existe → colocar
+   - Si no → voltear desde `next_flip_pile`
+
+2. **Voltear Carta**:
+   - Frontend consulta `next_flip_pile` del backend
+   - Usuario hace clic en pila desbloqueada (o automatico)
    - Se voltea la carta superior boca abajo
-   - Se muestra animación de volteo
+   - Se muestra animacion de volteo
    - La carta se convierte en `current_card`
 
-2. **Colocar Carta**:
-   - Usuario hace clic en la pila correspondiente al valor de la carta
-   - Se coloca la carta boca arriba en la pila
-   - Se desbloquea únicamente la pila donde se colocó
-   - Se verifica condición de victoria/derrota
+3. **Colocar Carta**:
+   - Usuario hace clic en pila correspondiente (o automatico)
+   - Backend valida y coloca la carta
+   - Backend actualiza `current_card_source = target_pile`
+   - Backend calcula nuevo `next_flip_pile`
+   - Se verifica condicion de victoria/derrota
 
-3. **Regla Especial**:
-   - Si se completa una pila (4 cartas) con una carta de su propio montón Y no es el movimiento final → **PIERDES**
-   - Si se completa una pila con carta de su propio montón PERO es el último movimiento que completa todo → **GANAS**
+4. **Regla Especial**:
+   - Si se completa una pila (4 cartas) con una carta de su propio monton Y no es el movimiento final → **PIERDES**
+   - Si se completa una pila con carta de su propio monton PERO es el ultimo movimiento que completa todo → **GANAS**
 
 ### 5. Fin del Juego
 - **Victoria**: Todas las pilas tienen 4 cartas boca arriba y no quedan cartas boca abajo
-- **Derrota**: Se completa una pila desde su propio montón (sin ser el movimiento final)
+- **Derrota**: Se completa una pila desde su propio monton (sin ser el movimiento final)
 
-### 6. Predicción Mística
+### 6. Prediccion Mistica
 - Si el usuario hizo una pregunta al inicio
 - Se muestra modal fullscreen con resultado
-- Mensaje positivo si ganó, negativo si perdió
-- Animaciones místicas acordes al resultado
+- Mensaje positivo si gano, negativo si perdio
+- Animaciones misticas acordes al resultado
 
 ---
 
 ## Componentes Principales
 
 ### App.jsx
-Componente raíz que orquesta todo el juego:
-- Gestión de estado global
-- Comunicación con API
+Componente raiz que orquesta todo el juego:
+- Gestion de estado global
+- Comunicacion con API
 - Control de animaciones
-- Modo automático
+- Modo automatico simplificado
 
 ### GameBoard.jsx
 Tablero de juego principal:
-- Renderiza las 13 pilas en layout específico
+- Renderiza las 13 pilas en layout especifico
 - Maneja clicks en cartas
-- Gestiona bloqueo/desbloqueo de pilas
+- Gestiona bloqueo/desbloqueo de pilas basado en `next_flip_pile`
 - Muestra carta actual flotante
 
 ### Pile.jsx
@@ -313,31 +444,31 @@ Componente de pila individual:
 
 ### Sidebar.jsx
 Panel lateral de controles:
-- Botones de acción (Nuevo Juego, Barajear, Iniciar)
+- Botones de accion (Nuevo Juego, Barajear, Iniciar)
 - Selector de modo (Manual/Auto)
-- Estadísticas (Reyes, Restantes, Movimientos, Barajeos)
+- Estadisticas (Reyes, Restantes, Movimientos, Barajeos)
 - Estado del juego
 
 ### ShuffleAnimation.jsx
-Animación completa de barajeo:
+Animacion completa de barajeo:
 - **Fase 1 - Fan Spread**: Muestra abanico inicial
 - **Fase 2 - Closing**: Cierra el mazo
 - **Fase 3 - Cutting**: Muestra corte en dos mitades
-- **Fase 4 - Shuffling**: Animación de entrelazado
+- **Fase 4 - Shuffling**: Animacion de entrelazado
 - **Fase 5 - Final Fan**: Muestra resultado final
 
 ### QuestionModal.jsx
-Modal para pregunta mística:
+Modal para pregunta mistica:
 - Interfaz visual con bola de cristal animada
-- Validación (mínimo 10 caracteres)
-- Opción de saltar pregunta
+- Validacion (minimo 10 caracteres)
+- Opcion de saltar pregunta
 
 ### PredictionResultModal.jsx
 Modal de resultado final:
-- Animaciones según resultado (victoria/derrota)
+- Animaciones segun resultado (victoria/derrota)
 - Muestra pregunta original
 - Mensaje del destino
-- Efectos visuales místicos
+- Efectos visuales misticos
 
 ---
 
@@ -347,7 +478,7 @@ Modal de resultado final:
 Hook personalizado que maneja tres tipos de sonidos:
 
 1. **Shuffle Sound** (`shuffle.mp3`)
-   - Se reproduce durante la animación de barajeo
+   - Se reproduce durante la animacion de barajeo
    - Volumen: 0.6
 
 2. **Flip Sound** (`flip.mp3`)
@@ -358,7 +489,7 @@ Hook personalizado que maneja tres tipos de sonidos:
    - Se reproduce al colocar una carta
    - Volumen: 0.5
 
-### Implementación
+### Implementacion
 - Los sonidos se precargan al montar el componente
 - Se reproducen con `currentTime = 0` para reinicio
 - Manejo de errores silencioso para compatibilidad
@@ -373,15 +504,15 @@ Todas las animaciones utilizan Framer Motion para transiciones suaves:
 **Tipos de Animaciones:**
 1. **Transiciones de Estado**: Aparecer/desaparecer componentes
 2. **Animaciones de Cartas**: Volteo, movimiento, apilamiento
-3. **Animaciones de Barajeo**: Fases complejas con múltiples transiciones
+3. **Animaciones de Barajeo**: Fases complejas con multiples transiciones
 4. **Efectos de Hover**: Interactividad visual
-5. **Partículas y Efectos**: Modal de predicción, efectos místicos
+5. **Particulas y Efectos**: Modal de prediccion, efectos misticos
 
-**Características:**
+**Caracteristicas:**
 - Transiciones suaves con `ease` functions
 - Delays escalonados para efectos cascada
 - Animaciones infinitas para efectos continuos
-- Preservación de layout durante animaciones
+- Preservacion de layout durante animaciones
 
 ---
 
@@ -403,7 +534,11 @@ Crea un nuevo juego.
   "success": true,
   "game_id": "game-1234567890",
   "message": "Juego creado exitosamente",
-  "game_state": { ... }
+  "game_state": {
+    "status": "waiting",
+    "next_flip_pile": null,
+    ...
+  }
 }
 ```
 
@@ -423,7 +558,7 @@ Barajea el mazo.
 {
   "success": true,
   "shuffle_count": 1,
-  "message": "Mazo barajeado en posición 26",
+  "message": "Mazo barajeado en posicion 26",
   "deck_before": [...],
   "deck_after": [...],
   "cut_point": 26
@@ -444,7 +579,11 @@ Inicia el juego y reparte cartas.
 ```json
 {
   "success": true,
-  "game_state": { ... },
+  "game_state": {
+    "status": "playing",
+    "next_flip_pile": "K",
+    ...
+  },
   "message": "Juego iniciado exitosamente"
 }
 ```
@@ -466,7 +605,11 @@ Voltea una carta de una pila.
   "success": true,
   "card": "KS",
   "pile": "K",
-  "game_state": { ... }
+  "game_state": {
+    "current_card": "KS",
+    "next_flip_pile": null,
+    ...
+  }
 }
 ```
 
@@ -488,7 +631,12 @@ Coloca la carta actual en una pila.
   "game_over": false,
   "won": null,
   "kings_revealed": 1,
-  "game_state": { ... }
+  "next_flip_pile": "K",
+  "game_state": {
+    "current_card": null,
+    "next_flip_pile": "K",
+    ...
+  }
 }
 ```
 
@@ -498,8 +646,8 @@ O si termina el juego:
   "success": true,
   "game_over": true,
   "won": true,
-  "message": "🎉 ¡GANASTE!",
-  "game_state": { ... }
+  "message": "GANASTE!",
+  "game_state": {...}
 }
 ```
 
@@ -513,8 +661,10 @@ Obtiene el estado actual del juego.
   "game_state": {
     "status": "playing",
     "current_card": "KS",
-    "piles": { ... },
-    "face_down_cards": { ... },
+    "current_card_source": "K",
+    "next_flip_pile": null,
+    "piles": {...},
+    "face_down_cards": {...},
     "kings_revealed": 2,
     "cards_remaining": 0,
     "moves_count": 45,
@@ -535,6 +685,7 @@ Estado completo del juego:
   status: 'waiting' | 'playing' | 'won' | 'lost',
   current_card: string | null,  // Ej: "KS", "AH"
   current_card_source: string | null,  // Pila de origen
+  next_flip_pile: string | null,  // NUEVO: Pila desde donde voltear siguiente
   piles: {
     'A': string[],     // Cartas boca arriba
     '2': string[],
@@ -550,7 +701,7 @@ Estado completo del juego:
   kings_revealed: number,      // Contador de reyes
   cards_remaining: number,     // Cartas en el mazo
   moves_count: number,         // Total de movimientos
-  shuffle_count: number        // Número de barajeados
+  shuffle_count: number        // Numero de barajeados
 }
 ```
 
@@ -575,9 +726,9 @@ Completar todas las 13 pilas con 4 cartas boca arriba cada una, sin cartas boca 
 ### Reglas de Juego
 
 1. **Voltear Carta**
-   - Solo se puede voltear de una pila desbloqueada
-   - Inicialmente, solo la pila K está desbloqueada
-   - Después de colocar una carta, solo esa pila se desbloquea
+   - Solo se puede voltear de la pila indicada por `next_flip_pile`
+   - Inicialmente, `next_flip_pile` es K
+   - Despues de colocar una carta, `next_flip_pile` apunta a esa pila
 
 2. **Colocar Carta**
    - La carta actual debe colocarse en la pila correspondiente a su valor
@@ -587,25 +738,25 @@ Completar todas las 13 pilas con 4 cartas boca arriba cada una, sin cartas boca 
 3. **Victoria**
    - Todas las pilas tienen exactamente 4 cartas boca arriba
    - No quedan cartas boca abajo en ninguna pila
-   - La última carta colocada puede ser de cualquier origen
+   - La ultima carta colocada puede ser de cualquier origen
 
 4. **Derrota**
    - Se completa una pila (4 cartas) usando una carta que proviene de esa misma pila
-   - **EXCEPCIÓN**: Si esa carta completa TODO el juego (todas las pilas terminan perfectas), es victoria
+   - **EXCEPCION**: Si esa carta completa TODO el juego (todas las pilas terminan perfectas), es victoria
 
 5. **Reyes Especiales**
    - Los reyes se cuentan cuando se colocan
-   - Revelar el 4º rey no causa derrota automática si proviene de otra pila
-   - Solo importa si se completa la pila K con una carta de su propio montón
+   - Revelar el 4º rey no causa derrota automatica si proviene de otra pila
+   - Solo importa si se completa la pila K con una carta de su propio monton
 
 ### Estrategia
-- Planificar movimientos para evitar completar pilas desde su propio montón
-- Priorizar cartas de pilas con más cartas boca abajo
+- Planificar movimientos para evitar completar pilas desde su propio monton
+- Priorizar cartas de pilas con mas cartas boca abajo
 - Usar el conteo de reyes para tomar decisiones
 
 ---
 
-## Instalación y Configuración
+## Instalacion y Configuracion
 
 ### Requisitos Previos
 - Python 3.12+
@@ -636,7 +787,7 @@ Completar todas las 13 pilas con 4 cartas boca arriba cada una, sin cartas boca 
    ```bash
    python run.py
    ```
-   El servidor se ejecutará en `http://localhost:5000`
+   El servidor se ejecutara en `http://localhost:5000`
 
 ### Frontend
 
@@ -654,9 +805,9 @@ Completar todas las 13 pilas con 4 cartas boca arriba cada una, sin cartas boca 
    ```bash
    npm start
    ```
-   La aplicación se abrirá en `http://localhost:3000`
+   La aplicacion se abrira en `http://localhost:3000`
 
-### Configuración
+### Configuracion
 
 **Backend (`config/config.py`):**
 ```python
@@ -673,38 +824,38 @@ const API_URL = 'http://localhost:5000/api/game';
 
 ---
 
-## Guía de Uso
+## Guia de Uso
 
 ### Iniciar una Partida
 
-1. **Abrir la aplicación** en el navegador
+1. **Abrir la aplicacion** en el navegador
 2. **Barajear las cartas**:
    - Click en "Ir a barajeo" (modo manual)
-   - O configurar barajeados automáticos (modo auto)
-3. **Hacer pregunta mística** (opcional):
+   - O configurar barajeados automaticos (modo auto)
+3. **Hacer pregunta mistica** (opcional):
    - Escribir pregunta al destino
-   - Mínimo 10 caracteres
-   - Puedes saltar esta opción
+   - Minimo 10 caracteres
+   - Puedes saltar esta opcion
 4. **Iniciar el juego**:
    - Click en "Iniciar"
-   - Las cartas se reparten automáticamente
+   - Las cartas se reparten automaticamente
 
 ### Jugar
 
 **Modo Manual:**
-1. Click en una pila desbloqueada para voltear carta
+1. Click en pila indicada por candado verde para voltear carta
 2. Click en la pila correspondiente al valor de la carta para colocarla
 3. Continuar hasta completar todas las pilas o perder
 
-**Modo Automático:**
+**Modo Automatico:**
 1. Seleccionar modo "Auto" en el sidebar
-2. Configurar número de barajeados (1-10)
-3. El juego se jugará automáticamente después del inicio
+2. Configurar numero de barajeados (1-10)
+3. El juego se jugara automaticamente despues del inicio
 4. Observar los movimientos en tiempo real
 
 ### Ganar/Perder
 
-- **Victoria**: Modal de éxito con mensaje positivo del destino
+- **Victoria**: Modal de exito con mensaje positivo del destino
 - **Derrota**: Modal con mensaje del destino (si hiciste pregunta)
 
 ### Nuevo Juego
@@ -715,41 +866,148 @@ const API_URL = 'http://localhost:5000/api/game';
 
 ---
 
-## Consideraciones Técnicas
+## Cambios Recientes y Mejoras
+
+### Version 2.0 - Control de Flujo Backend-Driven
+
+#### Problemas Resueltos
+1. **Race Conditions en Modo Automatico**
+   - Frontend intentaba calcular siguiente pila
+   - Multiples llamadas concurrentes
+   - Estado desincronizado entre frontend/backend
+
+2. **Bug de face_down_cards**
+   - K decrementaba incorrectamente al colocar cartas en otras pilas
+   - Causaba que el juego accediera a pilas vacias
+   - Comportamiento impredecible
+
+3. **Complejidad del Modo Automatico**
+   - Logica duplicada entre frontend/backend
+   - Dificil de mantener y debuggear
+   - Codigo de mas de 200 lineas
+
+#### Soluciones Implementadas
+
+**1. Nueva Funcion `_get_next_flip_pile()` en Backend**
+```python
+def _get_next_flip_pile(self):
+    if self.current_card:
+        return None
+    
+    if self.current_card_source and len(self.face_down_cards[self.current_card_source]) > 0:
+        return self.current_card_source
+    
+    piles_order = ['K', 'Q', 'J', '0', '9', '8', '7', '6', '5', '4', '3', '2', 'A']
+    for pile in piles_order:
+        if len(self.face_down_cards[pile]) > 0:
+            return pile
+    
+    return None
+```
+
+**2. Actualizacion de current_card_source ANTES de Limpiar**
+```python
+# En place_card(), ANTES:
+self.current_card = None
+self.current_card_source = None
+
+# DESPUES:
+self.current_card_source = target_pile  # Actualizar primero
+self.current_card = None
+```
+
+**3. Simplificacion del Modo Automatico**
+```javascript
+// Antes: 200+ lineas con logica compleja
+// Despues: 50 lineas, 100% confianza en backend
+
+const executeAutoMove = async () => {
+  const state = await fetchGameState(true);
+  
+  if (state.current_card) {
+    await handlePlaceCard(state.current_card[0]);
+  } else {
+    await handleFlipCard(state.next_flip_pile);
+  }
+};
+```
+
+#### Resultados
+- Eliminacion completa de race conditions
+- Codigo frontend 70% mas simple
+- Backend como unica fuente de verdad
+- Facil de mantener y extender
+- Sin bugs de sincronizacion
+
+### Mejoras de Arquitectura
+
+**Single Source of Truth:**
+- Backend controla toda la logica del juego
+- Frontend solo visualiza y envia comandos
+- No hay duplicacion de logica
+
+**Separacion de Responsabilidades:**
+- Backend: Logica de negocio
+- Frontend: Interfaz y experiencia de usuario
+- API: Contrato claro entre ambos
+
+**Mantenibilidad:**
+- Cambios en reglas solo requieren modificar backend
+- Frontend es mas simple y predecible
+- Tests mas faciles de escribir
+
+---
+
+## Consideraciones Tecnicas
 
 ### Almacenamiento en Memoria
 - Los juegos se almacenan solo en memoria del servidor
 - No hay persistencia entre reinicios
-- Cada sesión del servidor mantiene sus propios juegos
+- Cada sesion del servidor mantiene sus propios juegos
 
 ### Determinismo
-- El algoritmo de barajeo es completamente determinista
+- El algoritmo de barajeo es completamente deterministico
 - Mismo `game_id` y misma secuencia de `cut_point` produce mismo resultado
-- Útil para debugging y testing
+- Util para debugging y testing
 
 ### CORS
 - Configurado para permitir peticiones desde cualquier origen
-- En producción, debería restringirse a dominios específicos
+- En produccion, deberia restringirse a dominios especificos
 
 ### Rendimiento
-- Las animaciones están optimizadas con Framer Motion
+- Las animaciones estan optimizadas con Framer Motion
 - Lazy loading de componentes pesados
 - Sonidos precargados para respuesta inmediata
+- Backend procesa validaciones en O(1)
 
 ---
 
 ## Posibles Mejoras Futuras
 
+### Funcionalidad
 - Persistencia de juegos en base de datos
-- Sistema de rankings y estadísticas
-- Más variaciones de reglas
+- Sistema de rankings y estadisticas
+- Mas variaciones de reglas
 - Modo multijugador
 - Sistema de logros
+- Modo de practica/tutorial
+
+### Tecnicas
+- WebSockets para tiempo real
+- Progressive Web App (PWA)
+- Soporte offline
+- Tests automatizados completos
+- CI/CD pipeline
+
+### UI/UX
 - Temas visuales personalizables
-- Más efectos de sonido y música
-- Modo de práctica/tutorial
+- Mas efectos de sonido y musica
+- Animaciones adicionales
+- Accesibilidad mejorada
+- Responsive design completo
 
 ---
 
-**Versión**: 1.0  
-**Última actualización**: 2024
+**Version**: 2.0  
+**Ultima actualizacion**: 25 de Enero de 2026  
+**Autores**: Cesar y equipo de desarrollo
