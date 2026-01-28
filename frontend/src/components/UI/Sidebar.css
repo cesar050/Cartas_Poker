@@ -397,3 +397,79 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #ffca28;
 }
+
+/* ✨ SELECTOR DE REGLAS */
+.rules-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rule-btn {
+  padding: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rule-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rule-btn .rule-emoji {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.rule-info {
+  flex: 1;
+  text-align: left;
+}
+
+.rule-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.rule-subtitle {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.rule-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.rule-btn.active {
+  background: linear-gradient(135deg, var(--accent-gold), #ffca28);
+  border-color: var(--accent-gold);
+  color: #1a1a1a;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+}
+
+.rule-btn.active .rule-subtitle {
+  opacity: 0.8;
+}
+
+.rules-locked-message {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 152, 0, 0.15);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  color: #ffab40;
+  font-size: 11px;
+  text-align: center;
+  font-weight: 600;
+}

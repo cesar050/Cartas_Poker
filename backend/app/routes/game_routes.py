@@ -12,6 +12,7 @@ def create_game():
     try:
         data = request.get_json()
         game_id = data.get('game_id', 'default')
+        game_rules = data.get('game_rules', 'original')  # ✨ NUEVO - Recibir reglas
         
         if game_id in active_games:
             print(f"🔄 Eliminando juego anterior: {game_id}")
@@ -20,7 +21,7 @@ def create_game():
         import hashlib
         game_id_hash = int(hashlib.md5(game_id.encode()).hexdigest()[:8], 16)
         deck = DeckShuffle(initial_seed=game_id_hash, start_ordered=True)
-        game = PokerGame(deck)
+        game = PokerGame(deck, game_rules=game_rules)  # ✨ PASAR REGLAS AL JUEGO
         
         active_games[game_id] = game
         
@@ -29,6 +30,7 @@ def create_game():
         is_ordered = deck_order[:10] == expected_start
         
         print(f"✨ Juego creado: {game_id}")
+        print(f"   Reglas: {game_rules}")  # ✨ LOG DE REGLAS
         print(f"   Mazo inicial ordenado: {is_ordered}")
         print(f"   Primeras 10 cartas: {deck_order[:10]}")
         print(f"   Shuffle count: {deck.get_shuffle_count()}")
@@ -38,7 +40,7 @@ def create_game():
         return jsonify({
             'success': True,
             'game_id': game_id,
-            'message': 'Juego creado exitosamente',
+            'message': f'Juego creado exitosamente con reglas {game_rules}',  # ✨ MENSAJE CON REGLAS
             'game_state': game.get_game_state()
         }), 201
         
@@ -115,6 +117,7 @@ def start_game():
         
         print(f"🚀 Juego iniciado: {game_id}")
         print(f"   Estado: {game.status}")
+        print(f"   Reglas: {game.game_rules}")  # ✨ LOG DE REGLAS
         print(f"   Cartas repartidas en cada montón: 4")
         
         return jsonify({
@@ -203,39 +206,11 @@ def place_card():
             }), 400
         
         print(f"📍 Intentando colocar {game.current_card} en montón {pile}")
-        
-        # Guardar face_down_cards ANTES de place_card para validar después
-        face_down_before = {k: len(v) for k, v in game.face_down_cards.items()}
-        k_before = face_down_before.get('K', 0)
+        print(f"   Reglas activas: {game.game_rules}")  # ✨ LOG DE REGLAS
         
         result = game.place_card(pile)
         
-        # Validar que face_down_cards NO cambió después de place_card
-        face_down_after = {k: len(v) for k, v in game.face_down_cards.items()}
-        k_after = face_down_after.get('K', 0)
-        
-        # VALIDACIÓN ESPECÍFICA PARA K
-        if pile != 'K' and k_before != k_after:
-            print(f"❌❌❌ ERROR CRÍTICO K EN ROUTE: K cambió de {k_before} a {k_after} después de colocar carta en {pile}!")
-            print(f"   face_down_before: {face_down_before}")
-            print(f"   face_down_after: {face_down_after}")
-            # CORRECCIÓN: Restaurar K al valor correcto
-            # Calcular cuántas cartas se perdieron
-            diff = k_before - k_after
-            if diff > 0:
-                # Se perdieron cartas, pero no sabemos cuáles eran
-                # Lo mejor es forzar el conteo correcto
-                # Pero no podemos restaurar las cartas exactas
-                print(f"   ⚠️ No se puede restaurar las cartas exactas, pero el conteo debería ser {k_before}")
-        
-        print(f"   Resultado: {result}")
-        print(f"   K antes: {k_before}, K después: {k_after}, diferencia: {k_after - k_before}")
-        
-        # Obtener el estado - NO corregir, solo reportar si hay un bug
         game_state = game.get_game_state()
-        if pile != 'K' and game_state['face_down_cards'].get('K', 0) != k_before:
-            print(f"   ❌❌❌ BUG EN game_state: K es {game_state['face_down_cards'].get('K')} pero debería ser {k_before}")
-            print(f"   ⚠️ NO se corrige - esto es un bug que debe ser encontrado y arreglado")
         
         return jsonify({
             **result,
@@ -325,7 +300,8 @@ def debug_info():
             'moves_count': len(game.moves),
             'face_down_cards': {k: len(v) for k, v in game.face_down_cards.items()},
             'face_up_cards': {k: len(v) for k, v in game.piles.items()},
-            'total_games_active': len(active_games)
+            'total_games_active': len(active_games),
+            'game_rules': game.game_rules  # ✨ INCLUIR REGLAS EN DEBUG
         }
         
         return jsonify(debug_data), 200

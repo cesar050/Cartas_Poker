@@ -1,7 +1,7 @@
 class PokerGame:
-    """Lógica del juego con reglas CORRECTAS - VERSION PROTEGIDA"""
+    """Lógica del juego con AMBAS variantes de reglas"""
     
-    def __init__(self, deck_shuffle):
+    def __init__(self, deck_shuffle, game_rules='original'):
         self.deck = deck_shuffle
         self.piles = {v: [] for v in ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K']}
         self.face_down_cards = {v: [] for v in ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K']}
@@ -10,6 +10,7 @@ class PokerGame:
         self.kings_revealed = 0
         self.moves = []
         self.status = 'waiting'
+        self.game_rules = game_rules  # 'original' o 'alternative'
         
     def start_game(self):
         """Iniciar juego - Repartir 4 cartas boca abajo a CADA montón"""
@@ -23,18 +24,14 @@ class PokerGame:
                     card = self.deck.deck.pop(0)
                     self.face_down_cards[pile].append(card)
         
-        print("🎮 JUEGO INICIADO - Estado de face_down_cards:")
+        print(f"🎮 JUEGO INICIADO - Reglas: {self.game_rules}")
         for pile in piles_order:
             print(f"   {pile}: {len(self.face_down_cards[pile])} cartas")
         
         return self.get_game_state()
     
     def flip_card_from_pile(self, pile):
-        """
-        Voltear carta de un montón específico
-        
-        ⚠️ ÚNICA función que puede modificar face_down_cards
-        """
+        """Voltear carta de un montón específico"""
         if not self.face_down_cards[pile]:
             print(f"❌ FLIP: No hay cartas en {pile}")
             return None
@@ -47,7 +44,7 @@ class PokerGame:
         count_after = len(self.face_down_cards[pile])
         
         print(f"🔄 FLIP: {self.current_card} desde {pile}")
-        print(f"   ANTES: {count_before} cartas → DESPUÉS: {count_after} cartas")
+        print(f"   ANTES: {count_before} → DESPUÉS: {count_after}")
         
         return self.current_card
     
@@ -60,21 +57,13 @@ class PokerGame:
         return all(len(pile) == 4 for pile in self.piles.values())
     
     def _get_next_flip_pile(self):
-        """
-        ✨ NUEVA FUNCIÓN: Determinar desde qué pila voltear siguiente carta
-        
-        Regla: Si current_card_source tiene cartas, voltear desde ahí.
-               Si no, buscar la primera pila con cartas desde K hasta A.
-        """
-        # Si ya hay una carta actual, no hay siguiente flip
+        """Determinar desde qué pila voltear siguiente carta"""
         if self.current_card:
             return None
         
-        # Si hay una fuente previa y tiene cartas, voltear desde ahí
         if self.current_card_source and len(self.face_down_cards[self.current_card_source]) > 0:
             return self.current_card_source
         
-        # Buscar la primera pila con cartas desde K hasta A
         piles_order = ['K', 'Q', 'J', '0', '9', '8', '7', '6', '5', '4', '3', '2', 'A']
         for pile in piles_order:
             if len(self.face_down_cards[pile]) > 0:
@@ -83,25 +72,135 @@ class PokerGame:
         return None
     
     def place_card(self, target_pile):
+        """Colocar carta - Delega a la variante de reglas correspondiente"""
+        if self.game_rules == 'original':
+            return self._place_card_original(target_pile)
+        else:
+            return self._place_card_alternative(target_pile)
+    
+    def _place_card_original(self, target_pile):
         """
-        Colocar carta en un montón
-        
-        ⚠️⚠️⚠️ CRÍTICO: NO MODIFICAR face_down_cards AQUÍ ⚠️⚠️⚠️
+        REGLAS ORIGINALES (del video del docente) - CORREGIDAS:
+        - Pierdes si completas una pila (4/4) desde su mismo montón Y no quedan cartas boca abajo en ESA pila
+        - EXCEPCIÓN: Si ese movimiento completa TODO el juego (todas 4/4 + sin cartas boca abajo), GANAS
         """
         if not self.current_card:
             return {'success': False, 'message': 'No hay carta'}
         
         if self.status in ['won', 'lost']:
-            return {'success': False, 'message': '🔒 El juego ya terminó'}
+            return {'success': False, 'message': 'El juego ya terminó'}
         
         card_value = self.current_card[0]
         
         if card_value != target_pile:
-            return {'success': False, 'message': f'❌ {self.current_card} debe ir en {card_value}, no en {target_pile}'}
+            return {'success': False, 'message': f'❌ {self.current_card} debe ir en {card_value}'}
         
-        print(f"\n📍 PLACE: Colocando {self.current_card} en {target_pile} (origen: {self.current_card_source})")
+        print(f"\n📍 PLACE (ORIGINAL): {self.current_card} en {target_pile} (origen: {self.current_card_source})")
         
-        # REGLA DE PÉRDIDA
+        # Colocar carta
+        self.piles[target_pile].append(self.current_card)
+        self.moves.append({'card': self.current_card, 'pile': target_pile})
+        
+        # ✨ VERIFICACIÓN: ¿Completó una pila desde su propio montón?
+        if len(self.piles[target_pile]) == 4:
+            if self.current_card_source == target_pile and len(self.face_down_cards[target_pile]) == 0:
+                # Completó desde su propio montón Y no quedan cartas en esa pila
+                
+                # ✨ VERIFICAR: ¿Es el movimiento final que completa TODO?
+                all_complete = all(len(self.piles[p]) == 4 for p in self.piles)
+                no_face_down = not self._has_face_down_cards()
+                
+                self.current_card_source = target_pile
+                self.current_card = None
+                
+                if all_complete and no_face_down:
+                    # ✅ ES EL MOVIMIENTO FINAL → VICTORIA
+                    self.status = 'won'
+                    print(f"   ✅ VICTORIA: Todas las pilas completas y sin cartas boca abajo")
+                    return {
+                        'success': True,
+                        'message': '🎉 ¡GANASTE! Completaste todas las pilas',
+                        'game_over': True,
+                        'won': True
+                    }
+                else:
+                    # ❌ NO es movimiento final → DERROTA
+                    self.status = 'lost'
+                    print(f"   ❌ DERROTA: Completaste {target_pile} desde su montón (no es movimiento final)")
+                    return {
+                        'success': True,
+                        'message': f'💀 ¡Perdiste! Completaste {target_pile} desde su propio montón',
+                        'game_over': True,
+                        'won': False
+                    }
+        
+        # Lógica de reyes
+        if card_value == 'K':
+            self.kings_revealed += 1
+            print(f"   👑 Rey #{self.kings_revealed} revelado")
+            
+            if self.kings_revealed == 4:
+                self.current_card_source = target_pile
+                self.current_card = None
+                
+                if self._has_face_down_cards():
+                    self.status = 'lost'
+                    return {
+                        'success': True,
+                        'message': '💀 ¡Perdiste! Salió el 4to Rey antes de completar todo',
+                        'game_over': True,
+                        'won': False
+                    }
+                else:
+                    self.status = 'won'
+                    return {
+                        'success': True,
+                        'message': '🎉 ¡GANASTE!',
+                        'game_over': True,
+                        'won': True
+                    }
+        
+        # Verificar victoria (todas completas y sin cartas boca abajo)
+        if self._is_complete() and not self._has_face_down_cards():
+            self.current_card_source = target_pile
+            self.current_card = None
+            self.status = 'won'
+            return {
+                'success': True,
+                'message': '🎉 ¡GANASTE!',
+                'game_over': True,
+                'won': True
+            }
+        
+        self.current_card_source = target_pile
+        self.current_card = None
+        
+        return {
+            'success': True,
+            'kings_revealed': self.kings_revealed,
+            'next_flip_pile': self._get_next_flip_pile()
+        }
+    
+    def _place_card_alternative(self, target_pile):
+        """
+        REGLAS ALTERNATIVAS (implementación anterior):
+        - Pierdes si completas una pila desde su mismo montón 
+        - EXCEPCIÓN: Si ese movimiento completa TODO el juego, ganas
+        """
+        if not self.current_card:
+            return {'success': False, 'message': 'No hay carta'}
+        
+        if self.status in ['won', 'lost']:
+            return {'success': False, 'message': 'El juego ya terminó'}
+        
+        card_value = self.current_card[0]
+        
+        if card_value != target_pile:
+            return {'success': False, 'message': f'❌ {self.current_card} debe ir en {card_value}'}
+        
+        print(f"\n📍 PLACE (ALTERNATIVE): {self.current_card} en {target_pile} (origen: {self.current_card_source})")
+        
+        # REGLA DE PÉRDIDA (con excepción de victoria)
         if len(self.piles[target_pile]) == 3 and self.current_card_source == target_pile:
             would_complete_all = all(
                 (len(self.piles[p]) + (1 if p == target_pile else 0)) == 4
@@ -111,7 +210,6 @@ class PokerGame:
             self.piles[target_pile].append(self.current_card)
             self.moves.append({'card': self.current_card, 'pile': target_pile})
             
-            # IMPORTANTE: Actualizar current_card_source ANTES de limpiar
             self.current_card_source = target_pile
             self.current_card = None
 
@@ -142,50 +240,45 @@ class PokerGame:
             print(f"   👑 Rey #{self.kings_revealed} revelado")
             
             if self.kings_revealed == 4:
-                # IMPORTANTE: Actualizar current_card_source ANTES de limpiar
                 self.current_card_source = target_pile
                 self.current_card = None
                 
                 if self._has_face_down_cards():
                     self.status = 'lost'
                     return {
-                        'success': True, 
-                        'message': '💀 ¡Perdiste! Salió el 4to Rey antes de completar todo', 
-                        'game_over': True, 
+                        'success': True,
+                        'message': '💀 ¡Perdiste! Salió el 4to Rey antes de completar todo',
+                        'game_over': True,
                         'won': False
                     }
                 else:
                     self.status = 'won'
                     return {
-                        'success': True, 
-                        'message': '🎉 ¡GANASTE!', 
-                        'game_over': True, 
+                        'success': True,
+                        'message': '🎉 ¡GANASTE!',
+                        'game_over': True,
                         'won': True
                     }
         
         # Verificar victoria
         if self._is_complete() and not self._has_face_down_cards():
-            # IMPORTANTE: Actualizar current_card_source ANTES de limpiar
             self.current_card_source = target_pile
             self.current_card = None
             self.status = 'won'
             return {
-                'success': True, 
-                'message': '🎉 ¡GANASTE!', 
-                'game_over': True, 
+                'success': True,
+                'message': '🎉 ¡GANASTE!',
+                'game_over': True,
                 'won': True
             }
         
-        # ✨ CRÍTICO: Actualizar current_card_source a donde se colocó
         self.current_card_source = target_pile
         self.current_card = None
-        
-        print(f"   ✅ Carta colocada. Siguiente flip desde: {self.current_card_source}")
         
         return {
             'success': True,
             'kings_revealed': self.kings_revealed,
-            'next_flip_pile': self._get_next_flip_pile()  # ✨ NUEVO
+            'next_flip_pile': self._get_next_flip_pile()
         }
     
     def get_game_state(self):
@@ -208,7 +301,8 @@ class PokerGame:
             'cards_remaining': len(self.deck.deck),
             'moves_count': len(self.moves),
             'shuffle_count': self.deck.get_shuffle_count(),
-            'next_flip_pile': self._get_next_flip_pile()  # ✨ NUEVO
+            'next_flip_pile': self._get_next_flip_pile(),
+            'game_rules': self.game_rules
         }
         
         return state

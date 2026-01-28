@@ -30,6 +30,7 @@ function App() {
   const [isDealing, setIsDealing] = useState(false);
   const [gameMode, setGameMode] = useState('manual');
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [gameRules, setGameRules] = useState('original');  // ✨ NUEVO ESTADO
   const shuffleCompletePromiseRef = useRef(null);
   const shuffleCompleteResolveRef = useRef(null);
   const gameInitializedRef = useRef(false);
@@ -84,8 +85,10 @@ function App() {
       const newGameId = `game-${timestamp}-${random}-${counter}`;
       
       console.log('🎮 Creando nuevo juego con ID:', newGameId);
+      console.log('📜 Reglas seleccionadas:', gameRules);  // ✨ NUEVO
       
-      const createResponse = await gameAPI.createGame(newGameId);
+      // ✨ PASAR REGLAS AL CREAR EL JUEGO
+      const createResponse = await gameAPI.createGame(newGameId, gameRules);
       
       let newGameState;
       if (createResponse.data.game_state) {
@@ -100,13 +103,15 @@ function App() {
       setShuffleCount(newGameState.shuffle_count || 0);
       setUnlockedPile(null);
       
-      showAlert('success', '✨ Nuevo juego creado! Barajea las cartas para comenzar.');
+      // ✨ MENSAJE CON NOMBRE DE REGLAS
+      const rulesName = gameRules === 'original' ? 'Originales (K Especial)' : 'Alternativas';
+      showAlert('success', `✨ Nuevo juego creado! Reglas: ${rulesName}`);
     } catch (error) {
       console.error('❌ Error al crear nuevo juego:', error);
       showAlert('error', '❌ Error al crear juego: ' + error.message);
     }
     setIsLoading(false);
-  }, [showAlert]);
+  }, [showAlert, gameRules]);  // ✨ AGREGAR gameRules
 
   useEffect(() => {
     if (!gameInitializedRef.current) {
@@ -115,7 +120,8 @@ function App() {
         try {
           console.log('🎮 Inicializando juego por primera vez...');
           const initialGameId = 'game-' + Date.now();
-          await gameAPI.createGame(initialGameId);
+          // ✨ PASAR REGLAS INICIALES
+          await gameAPI.createGame(initialGameId, gameRules);
           setGameId(initialGameId);
           
           const response = await gameAPI.getGameState(initialGameId);
@@ -130,7 +136,7 @@ function App() {
       };
       initializeGame();
     }
-  }, []);
+  }, [gameRules]);  // ✨ AGREGAR gameRules
 
   const handleShuffle = async (cutPoint) => {
     try {
@@ -290,7 +296,7 @@ function App() {
       const newGameState = response.data.game_state;
       
       setGameState(JSON.parse(JSON.stringify(newGameState)));
-      setUnlockedPile(newGameState.next_flip_pile || 'K'); // ✨ BACKEND decide
+      setUnlockedPile(newGameState.next_flip_pile || 'K');
       setIsDealing(false);
       setIsLoading(false);
       
@@ -379,7 +385,6 @@ function App() {
           }, 1000);
         }
       } else {
-        // ✨ BACKEND indica desde dónde voltear siguiente
         const nextPile = response.data.next_flip_pile;
         setUnlockedPile(nextPile);
         console.log('✅ Siguiente flip desde:', nextPile);
@@ -394,23 +399,17 @@ function App() {
     }
   }, [gameId, showAlert, userMessage, playPlace, isDealing, isAutoPlaying]);
 
-  // ============================================
-  // ✨ NUEVO MODO AUTOMÁTICO - LÓGICA SIMPLE
-  // ============================================
-
   const executeAutoMove = useCallback(async () => {
     try {
-      // 1. Obtener estado fresco
       const currentState = await fetchGameState(true);
       
       if (!currentState || currentState.status !== 'playing') {
         console.log('🤖 Juego terminado');
         autoPlayActiveRef.current = false;
         setIsAutoPlaying(false);
-        return false; // Detener
+        return false;
       }
 
-      // 2. ¿Hay carta para colocar?
       if (currentState.current_card) {
         const cardValue = currentState.current_card[0];
         console.log('🤖 Colocando', currentState.current_card, 'en', cardValue);
@@ -419,17 +418,16 @@ function App() {
         await handlePlaceCard(cardValue);
         await new Promise(resolve => setTimeout(resolve, 600));
         
-        return true; // Continuar
+        return true;
       } 
       
-      // 3. No hay carta, voltear siguiente
       const nextPile = currentState.next_flip_pile;
       
       if (!nextPile) {
         console.log('🤖 No hay más cartas para voltear');
         autoPlayActiveRef.current = false;
         setIsAutoPlaying(false);
-        return false; // Detener
+        return false;
       }
 
       console.log('🤖 Volteando desde', nextPile);
@@ -438,7 +436,7 @@ function App() {
       await handleFlipCard(nextPile);
       await new Promise(resolve => setTimeout(resolve, 600));
       
-      return true; // Continuar
+      return true;
 
     } catch (error) {
       console.error('🤖 Error:', error);
@@ -459,7 +457,6 @@ function App() {
     autoPlayActiveRef.current = true;
     showAlert('success', '🤖 Modo automático activado', 2000);
     
-    // Bucle automático
     const autoLoop = async () => {
       if (!autoPlayActiveRef.current) {
         console.log('🤖 Bucle detenido');
@@ -469,7 +466,7 @@ function App() {
       const shouldContinue = await executeAutoMove();
       
       if (shouldContinue && autoPlayActiveRef.current) {
-        setTimeout(autoLoop, 300); // Siguiente movimiento
+        setTimeout(autoLoop, 300);
       }
     };
     
@@ -561,6 +558,7 @@ function App() {
         isAutoPlaying={isAutoPlaying}
         onAutoShuffle={handleAutoShuffle}
         onModeChange={setGameMode}
+        onRulesChange={setGameRules}  // ✨ NUEVO PROP
       />
 
       <div className="game-area">

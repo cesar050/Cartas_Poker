@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import './Sidebar.css';
-import { FaHourglassHalf, FaGamepad, FaTrophy, FaSkull, FaRobot, FaRandom, FaCrown, FaThLarge, FaChartBar, FaRocket, FaStar } from 'react-icons/fa';
+import { FaHourglassHalf, FaGamepad, FaTrophy, FaSkull, FaRobot, FaRandom, FaCrown, FaThLarge, FaChartBar, FaRocket, FaStar, FaBook } from 'react-icons/fa';
 
 const Sidebar = ({ 
   onNewGame, 
@@ -14,9 +14,11 @@ const Sidebar = ({
   onAutoPlay,
   isAutoPlaying,
   onAutoShuffle,
-  onModeChange
+  onModeChange,
+  onRulesChange  // ✨ NUEVO
 }) => {
   const [mode, setMode] = useState('manual');
+  const [rules, setRules] = useState('original');  // ✨ NUEVO
   const [autoShuffleCount, setAutoShuffleCount] = useState(3);
   const autoPlayAttemptedRef = useRef(false);
 
@@ -35,8 +37,7 @@ const Sidebar = ({
       autoPlayAttemptedRef.current = true;
       onAutoPlay();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState?.status, mode, isAutoPlaying, onAutoPlay]); // gameState.piles y gameState.face_down_cards se acceden pero no necesitan estar en dependencias
+  }, [gameState?.status, mode, isAutoPlaying, onAutoPlay]);
   
   useEffect(() => {
     if (gameState?.status !== 'playing') {
@@ -60,6 +61,13 @@ const Sidebar = ({
     }
   };
 
+  const handleRulesChange = (newRules) => {
+    setRules(newRules);
+    if (onRulesChange) {
+      onRulesChange(newRules);
+    }
+  };
+
   const handleAutoShuffle = () => {
     if (onAutoShuffle && autoShuffleCount > 0) {
       onAutoShuffle(autoShuffleCount);
@@ -69,11 +77,11 @@ const Sidebar = ({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-  <h1><FaThLarge className="icon-inline" /> Póker Místico</h1>
+        <h1><FaThLarge className="icon-inline" /> Póker Místico</h1>
         <p>Juego de Cartas</p>
       </div>
 
-      {}
+      {/* ESTADO DEL JUEGO */}
       {gameState?.status && (
         <div className="sidebar-section">
           <div className={`game-status status-${gameState.status}`}>
@@ -85,13 +93,46 @@ const Sidebar = ({
         </div>
       )}
 
-      {}
+      {/* ✨ SELECTOR DE REGLAS */}
       <div className="sidebar-section">
-        <h3>Modo</h3>
+        <h3><FaBook className="icon-inline" /> Reglas del Juego</h3>
+        <div className="rules-selector">
+          <button
+            className={`rule-btn ${rules === 'original' ? 'active' : ''}`}
+            onClick={() => handleRulesChange('original')}
+            disabled={gameState?.status === 'playing'}
+          >
+            <div className="rule-info">
+              <div className="rule-title">Originales</div>
+              <div className="rule-subtitle">K especial</div>
+            </div>
+          </button>
+          <button
+            className={`rule-btn ${rules === 'alternative' ? 'active' : ''}`}
+            onClick={() => handleRulesChange('alternative')}
+            disabled={gameState?.status === 'playing'}
+          >
+            <span className="rule-emoji">⚡</span>
+            <div className="rule-info">
+              <div className="rule-title">Alternativas</div>
+              <div className="rule-subtitle">Victoria final</div>
+            </div>
+          </button>
+        </div>
+        {gameState?.status === 'playing' && (
+          <div className="rules-locked-message">
+            ⚠️ No puedes cambiar reglas durante el juego
+          </div>
+        )}
+      </div>
+
+      {/* SELECTOR DE MODO */}
+      <div className="sidebar-section">
+        <h3>Modo de Juego</h3>
         <div className="mode-selector">
           <button
             className={`mode-btn ${mode === 'manual' ? 'active' : ''}`}
-            onClick={() => setMode('manual')}
+            onClick={() => handleModeChange('manual')}
           >
             <FaGamepad className="icon-inline" />
             <span>Manual</span>
@@ -106,7 +147,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      {}
+      {/* BARAJEAR */}
       <div className="sidebar-section">
         <h3>Barajear</h3>
         <div className="shuffle-controls">
@@ -117,7 +158,7 @@ const Sidebar = ({
                 onClick={handleShuffle}
                 disabled={isLoading || gameState?.status === 'playing'}
               >
-                <><FaRandom className="icon-inline" /> Ir a barajeo</>
+                <FaRandom className="icon-inline" /> Ir a barajeo
               </button>
               {shuffleCount > 0 && (
                 <button 
@@ -125,7 +166,7 @@ const Sidebar = ({
                   onClick={handleShuffle}
                   disabled={isLoading || gameState?.status === 'playing'}
                 >
-                  <><FaRandom className="icon-inline" /> Barajear nuevamente</>
+                  <FaRandom className="icon-inline" /> Barajear nuevamente
                 </button>
               )}
             </>
@@ -149,7 +190,7 @@ const Sidebar = ({
                   onClick={handleAutoShuffle}
                   disabled={isLoading || gameState?.status === 'playing'}
                 >
-                  <><FaRandom className="icon-inline" /> Barajear automáticamente</>
+                  <FaRandom className="icon-inline" /> Barajear automáticamente
                 </button>
               </div>
             </>
@@ -160,7 +201,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      {}
+      {/* ESTADÍSTICAS */}
       <div className="sidebar-section">
         <h3>Estadísticas</h3>
         <div className="stats-grid">
@@ -195,10 +236,10 @@ const Sidebar = ({
         </div>
       </div>
 
-      {}
+      {/* ACCIONES */}
       <div className="sidebar-actions">
         {gameState?.status === 'waiting' && shuffleCount > 0 && (
-            <motion.button 
+          <motion.button 
             className="btn btn-start"
             onClick={onStartGame}
             disabled={isLoading}
@@ -207,7 +248,7 @@ const Sidebar = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <><FaRocket className="icon-inline" /> Iniciar</>
+            <FaRocket className="icon-inline" /> Iniciar
           </motion.button>
         )}
 
@@ -234,11 +275,9 @@ const Sidebar = ({
           onClick={onNewGame}
           disabled={isLoading}
         >
-          <><FaStar className="icon-inline" /> Nuevo Juego</>
+          <FaStar className="icon-inline" /> Nuevo Juego
         </button>
       </div>
-
-      {}
     </div>
   );
 };
